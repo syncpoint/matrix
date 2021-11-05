@@ -8,7 +8,7 @@ Für die Replikation von Daten verwenden wir die Spezifikation für das __Messag
 
 In seiner allgemeinsten Form ist die Replikation als _jeder-mit-jedem_ zu sehen. Erweiterte bzw. einschränkende Anforderungen wie z.B. _einer-an-alle_ werden über die Berechtigungskonzepte von Matrix abgebildet.
 
-## Abbildungen
+## Elemente
 
 In ODIN verwenden wir Projekte und Layer um Daten zu strukturieren. Diese Konzepte wollen wir auch bei der Replikation beibehalten und müssen entsprechende Analogien aus der Matrix welt dafür finden.
 
@@ -23,3 +23,15 @@ Ein Layer ist ein Container für eine beliebige Anzahl von Features.
 ### Feature
 
 Ein Feature ist ein darstellbares und geographisch verortetes Objekt. Jedem Feature sind ein oder mehrere Geometrien und eine Menge von Eigenschaften zugeordnet.
+
+## Abbildungen
+
+Das primäre Container Element in Matrix ist der _Raum_. Mit der aktuellen Spezifikation (nov21) ist es möglich, Räume in hierarchische Strukturen zu unterteilen. Sogenannte _Spaces_ sind Räume, die wiederum Räume als Kind-Elemente enthalten können.
+
+Die Abbildung ODIN <-> Matrix sieht wie folgt aus:
+
+  * Projekt <-> Raum (Space)
+  * Layer <-> Raum (Kind-Element des Raums, der als Space ausgewählt wurde)
+
+ODIN Features werden nicht direkt abgebildet. Stattdessen werden Nachrichten in dem entsprechenden Räumen publiziert, deren Inhalt die Anweisungen sind, die zu einer CRUD Operation auf einem Feature führen.
+
