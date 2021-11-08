@@ -43,6 +43,18 @@ Jede Nachricht enthält mindestens einen Nachrichtentyp, einen Raum und die Payl
 
 
 
+### Nachrichtenstrom
+
+Die Nachrichten werden entsprechen dem Event Sourcing Ansatz zeitlich geordnet abgelegt und aggregiert zu Snapshots aggregiert. Für Aktionen wie die Freigabe eines Plans werden ähnlich den Tags im Git Workflow  Snapshots erzeugt. Diese Snapshots können nicht verändert werden. Weiterführende Änderungen – wiederum als Events zeitlich geordnet abgelegt – beeinflussen bestehende Snapshot nicht.  
+
+Um den benutzen Speicherplatz bei Bedarf zu begrenzen, können einzel Events zu einem technischen Snapshot aggregiert un archiviert werden.  
+
+Snapshot können fachlich - Freigabe - oder technisch - Archivierung - motiviert sein. 
+
+![image-20211108110230894](event_stream.png)
+
+
+
 ##
 
 
