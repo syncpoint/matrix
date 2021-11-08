@@ -39,9 +39,12 @@ ODIN Features werden nicht explizit übertragen. In den einlenen Layern zugeordn
 
 ### Aufbau 
 
-Jede Nachticht enhält mindestens einen Nachrichtentyp, einen Raum und die Payload.
+Jede Nachricht enthält mindestens einen Nachrichtentyp, einen Raum und die Payload.
 
-## 
+
+
+##
+
 
 
 
