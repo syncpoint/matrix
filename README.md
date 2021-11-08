@@ -33,5 +33,16 @@ Die Abbildung ODIN <-> Matrix sieht wie folgt aus:
   * Projekt <-> Raum (Space)
   * Layer <-> Raum (Kind-Element des Raums, der als Space ausgewählt wurde)
 
-ODIN Features werden nicht direkt abgebildet. Stattdessen werden Nachrichten in dem entsprechenden Räumen publiziert, deren Inhalt die Anweisungen sind, die zu einer CRUD Operation auf einem Feature führen.
+## Nachrichten
+
+ODIN Features werden nicht explizit übertragen. In den einlenen Layern zugeordneten Räumen werden die internen vom Store aggregierten Kommandos als Nachrichten publiziert. Bei bestimmten Aktionen wie beispielswiese die Freigabe eines Planes oder Anforderung zur Absegnung eines Planes durch den Komandanten werden Snapshots der entsprechenden Layers verschickt. 
+
+### Aufbau 
+
+Jede Nachticht enhält mindestens einen Nachrichtentyp, einen Raum und die Payload.
+
+## 
+
+
+
 
