@@ -33,6 +33,10 @@ Die Abbildung ODIN <-> Matrix sieht wie folgt aus:
   * Projekt <-> Raum (Space)
   * Layer <-> Raum (Kind-Element des Raums, der als Space ausgewählt wurde)
 
+## Matrix Referenz
+
+Leider gibt es in der offiziellen Doku noch keine Abschnitte zum Thema _Spaces_. Allerdings existiert ein [Proposal for "spaces"](https://github.com/matrix-org/matrix-doc/blob/old_master/proposals/1772-groups-as-rooms.md), aus dem sich die wichtigsten Abläufe und Events ableiten lassen.
+
 ## Nachrichten
 
 ODIN Features werden nicht explizit übertragen. In den einlenen Layern zugeordneten Räumen werden die internen vom Store aggregierten Kommandos als Nachrichten publiziert. Bei bestimmten Aktionen wie beispielswiese die Freigabe eines Planes oder Anforderung zur Absegnung eines Planes durch den Komandanten werden Snapshots der entsprechenden Layers verschickt. 
