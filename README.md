@@ -45,13 +45,11 @@ ODIN Features werden nicht explizit übertragen. In den einlenen Layern zugeordn
 
 Jede Nachricht enthält mindestens einen Nachrichtentyp, einen Raum und die Payload.
 
-
-
 ### Nachrichtenstrom
 
-Die Nachrichten werden entsprechen dem Event Sourcing Ansatz zeitlich geordnet abgelegt und aggregiert zu Snapshots aggregiert. Für Aktionen wie die Freigabe eines Plans werden ähnlich den Tags im Git Workflow  Snapshots erzeugt. Diese Snapshots können nicht verändert werden. Weiterführende Änderungen – wiederum als Events zeitlich geordnet abgelegt – beeinflussen bestehende Snapshot nicht.  
+Die Nachrichten werden entsprechen dem Event Sourcing Ansatz zeitlich geordnet abgelegt und aggregiert zu Snapshots aggregiert. Für Aktionen wie die Freigabe eines Plans werden ähnlich den Tags im Git Workflow Snapshots erzeugt. Diese Snapshots können nicht verändert werden. Weiterführende Änderungen – wiederum als Events zeitlich geordnet abgelegt – beeinflussen bestehende Snapshot nicht.  
 
-Um den benutzen Speicherplatz bei Bedarf zu begrenzen, können einzel Events zu einem technischen Snapshot aggregiert un archiviert werden.  
+Um den benutzen Speicherplatz bei Bedarf zu begrenzen, können einzelne Events zu einem technischen Snapshot aggregiert und archiviert werden.  
 
 Snapshot können fachlich - Freigabe - oder technisch - Archivierung - motiviert sein. 
 
@@ -59,7 +57,26 @@ Snapshot können fachlich - Freigabe - oder technisch - Archivierung - motiviert
 
 
 
-##
+## Use-Cases
+
+Für alle nachstehenden Use-Cases müssen die teilehmenden Benutzer über einen Account beim Matrix Server haben und auch angemeldet sein. Über das _Auto-Join_ Flag kann beeinflusst werden, ob Einladungen in Räume bzw. Spaces ohne weiteres Zutun des Benutzers automatisch angenommen werden. 
+
+__TODO__: Entscheiden, ob Auto-Join gewünscht ist.
+
+### Projekt teilen
+
+Ein Benutzer erstellt ein lokales ODIN Projekt und legt zwei Layer an. Dann entscheidet er, dass dieses Projekt mit anderen geteilt werden soll. Im Zuge des Vorgangs "teilen" wird
+
+ 1) ein Space angelegt, der mit dem Projekt verknüpft ist
+ 2) für jeden existierenden Layer ein Raum angelegt und mit dem Layer verknüpft
+ 3) Defaults für den Power-Level der Räume und der Benutzer festgelegt (__TODO__: prüfen, ob diese Defaults/Policy auf dem Server festgelegt werden können)
+ 4) eine Einladung für die ausgewählten Benutzer für die Teilnahme am Project Space erstellt
+
+### Layer teilen
+
+Grundsätzlich werden neue Layer nicht automatisch geteilt. Wird ein neuer Layer erstellt, könnte das Teil des Dialogs sein.
+
+### Benutzer einladen (Projekt bzw. Layer)
 
 
 
