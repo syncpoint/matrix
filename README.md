@@ -78,6 +78,21 @@ Grundsätzlich werden neue Layer nicht automatisch geteilt. Wird ein neuer Layer
 
 ### Benutzer einladen (Projekt bzw. Layer)
 
+Wird ein Benutzer zu einem Projekt eingeladen, dann
+
+  1) Wird er Mitglied im Space
+  2) Über die Eltern-Kind Beziehungen im Space könne alle geteilten Layer enumeriert werden ("getRoomHierarchy")
+  3) kann er automatisch alle Räume/Layer betreten, bei denen Auto-Join eingeschaltet ist
+
+### Teilen eines Layers zurücknehmen
+
+Um einen geteilten Layer zurückzunehmen, müssen ausgewählte/alle Benutzer aus dem Raum entfernt werden.
+
+  1) Der Eigentümer "A" entfernt Benutzer "B" aus dem Raum ("kick").
+  2) Die ODIN Instanz von Benutzer "B" muss auf dieses Event reagieren und die lokale Kopie des betroffenen 
+  (dem Raum zugeordneten) Layers löschen. Um zu verhindern, dass der Benutzer wieder den Raum betreten kann, 
+  kann er "verbannt" ("ban") werden.
+
 
 
 
