@@ -1,0 +1,23 @@
+{
+  "name": "syncpoint-matrix",
+  "version": "1.0.0",
+  "description": "a buch of scripts to explore the [Matrix]",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syncpoint/matrix.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/syncpoint/matrix/issues"
+  },
+  "homepage": "https://github.com/syncpoint/matrix#readme",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "matrix-js-sdk": "^15.1.0"
+  }
+}
