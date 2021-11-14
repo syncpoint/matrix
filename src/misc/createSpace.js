@@ -1,6 +1,6 @@
 'use strict'
 
-const config = require('./config')
+const config = require('../config')
 
 const matrixSDK = require('matrix-js-sdk')
 const client = matrixSDK.createClient(config)
