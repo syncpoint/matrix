@@ -59,6 +59,10 @@ Snapshot können fachlich - Freigabe - oder technisch - Archivierung - motiviert
 
 ## Use-Cases
 
+### Voraussetzungen
+
+Für alle nachfolgenden Use-Cases setzen wir voraus, dass die Benutzer sich bereits bei einem Matrix Server registriert haben und über gültige Zugangsdaten verfügen.
+
 Für alle nachstehenden Use-Cases müssen die teilehmenden Benutzer über einen Account beim Matrix Server haben und auch angemeldet sein. Über das _Auto-Join_ Flag kann beeinflusst werden, ob Einladungen in Räume bzw. Spaces ohne weiteres Zutun des Benutzers automatisch angenommen werden. 
 
 __TODO__: Entscheiden, ob Auto-Join gewünscht ist.
