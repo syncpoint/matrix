@@ -2,11 +2,20 @@
 
 const EventEmitter = require('events')
 const matrixSDK = require('matrix-js-sdk')
+const { URL } = require('url')
 
-class odirx extends EventEmitter{
+
+const extractServerName = baseUrl => {
+  const url = new URL(baseUrl)
+  return url.hostname
+}
+
+class Odirx extends EventEmitter{
   constructor (config) {
     super()
+  
     this.client = matrixSDK.createClient(config)
+    this.matrixServer = extractServerName(config.baseUrl)
 
     this.client.on('sync', (state) => {
       if (state === 'PREPARED') {
@@ -14,9 +23,9 @@ class odirx extends EventEmitter{
       }
     })
 
-    this.client.on('event', (event) => {
+    /* this.client.on('event', (event) => {
       console.dir(event)
-    })
+    }) */
   }
 
   start () {
@@ -32,6 +41,18 @@ class odirx extends EventEmitter{
     // syncState is one out of ERROR, PREPARED, STOPPED, SYNCING, CATCHUP, RECONNECTING
     // https://github.com/matrix-org/matrix-js-sdk/blob/develop/src/sync.api.ts
     return (syncState !== null && syncState === 'PREPARED')
+  }
+
+  async clearStores () {
+    return this.client.clearStores()
+  }
+
+  async projectExists (projectId, matrixServer) {
+    const alias = `#${projectId}:${matrixServer}`
+    console.log(`looking for alias ${alias}`)
+    return this.client.resolveRoomAlias(alias)
+      .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
+      .catch((err) => {return Promise.resolve({ exists: false })})
   }
 
   /**
@@ -50,15 +71,17 @@ class odirx extends EventEmitter{
    * }
    */
   async shareProject (projectStructure) {
-    if (!this.isReady()) return Promise.reject(new Error('[MATRIX] API is not ready'))
+    if (!this.isReady()) return Promise.reject(new Error('[Matrix] API is not ready'))
 
-    // this must to be idempotent, so we need to check if the project is already shared
-    const space = await this.client.getRoom(projectStructure.id)
-    if (space) return Promise.resolve()
+      const { exists } = await this.projectExists(projectStructure.id, this.matrixServer)
 
-    try {
+      if (exists) return Promise.reject(new Error(`The project identified by ${projectStructure.id} has already been shared`))
+       
+      console.log('Creating SPACE and ROOMS ...')
+
       const { room_id: spaceId } = await this.client.createRoom({
         name: projectStructure.name,
+        room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
         visibility: 'private',
         creation_content: {
           type: 'm.space' // indicates that the room has the role of a SPACE
@@ -70,6 +93,7 @@ class odirx extends EventEmitter{
       for (const layer of projectStructure.layers) {
         const { room_id: childRoomId } = await this.client.createRoom({
           name: layer.name,
+          room_alias_name: layer.id,
           visibility: 'private'
         })
         
@@ -80,21 +104,19 @@ class odirx extends EventEmitter{
             auto_join: true,
             suggested: true,
             via: [
-              'matrix.org'
+            //  'matrix.org'
             ]
           },
           childRoomId
         )
         console.log('created link PARENT SPACE => CHILD ROOM')
+
+        await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
+        console.log('created link CHILD ROOM => PARENT SPACE')
       }
           
-      await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
-      console.log('created link CHILD ROOM => PARENT SPACE')
-      
       return Promise.resolve(projectStructure)
-    } catch (error) {
-      return Promise.reject(error)
-    }
+
 
     // create space and the first room for the default layer
     // subscribe to room events
@@ -103,8 +125,13 @@ class odirx extends EventEmitter{
     // * membership changes?
   }
 
-  async invite (projectId, matrixUserName) {
+  async invite (projectStructure, matrixUserId) {
     // by making use of auto-join the invitation should be accepted immediadetly 
+    const {exists, room_id: roomId } = await this.projectExists(projectStructure.id, this.matrixServer)
+    if (!exists) return Promise.reject(new Error(`No [Matrix] room found for projectId ${projectStructure.id}`))
+
+    const result = await this.client.invite(roomId, matrixUserId)
+    return Promise.resolve(result)
   }
 
   async post (layerId, message) {
@@ -113,4 +140,4 @@ class odirx extends EventEmitter{
 
 }
 
-module.exports = odirx
+module.exports = Odirx

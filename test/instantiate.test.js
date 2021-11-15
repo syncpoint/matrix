@@ -4,41 +4,59 @@ const Odrix = require('../src/index')
 
 const config = require('../src/config')
 
-describe('wait for odrix to be ready', () => {
-  const client = new Odrix(config)
+describe('Use ODRIX API', async () => {
+  /* it('wait for ODRIX to be ready', async () => {
+    const client = new Odrix(config)
+    
+    client.on('state', async state => {
+      assert.strictEqual(state, 'READY')
+      const isReady = client.isReady()
+      assert.strictEqual(isReady, true)
+      client.stop()
+    })
   
-  client.on('state', async state => {
-    assert.strictEqual(state, 'READY')
+    client.start()
     const isReady = client.isReady()
-    assert.strictEqual(isReady, true)
-    client.stop()
+    assert.strictEqual(isReady, false)
+  }) */
+
+  it('create space and rooms from project structure' , async () => {
+
+    const projectStructure = {
+      // id: '219f5f10-2bd9-4774-9343-a5a6794fe53f', // fixed UUID in order to test idempotency
+      id: uuidv4(),
+      name: 'Simply the best project name, ever',
+      layers: [
+        { id: uuidv4(), name: 'Own Situation'}
+      ]
+    }
+
+    const INVITEE = '@s2:thomass-macbook-pro.local'
+  
+    // console.dir(projectStructure)
+  
+    const client = new Odrix(config)
+    // await client.clearStores()
+  
+    client.on('state', async (state) => {
+      console.log(`STATE: ${state}`)
+      assert.strictEqual(state, 'READY')
+      try {
+        await client.shareProject(projectStructure)
+        await client.invite(projectStructure, INVITEE)
+      } catch (error) {
+        console.error(error)
+      } finally {
+        client.stop()
+      }
+      
+      
+    })
+  
+    client.start()
   })
 
-  client.start()
-  const isReady = client.isReady()
-  assert.strictEqual(isReady, false)
 })
 
-describe('create space and rooms from project structure' , () => {
 
-  const projectStructure = {
-    id: uuidv4(),
-    name: 'Simply the best project name, ever',
-    layers: [
-      { id: uuidv4(), name: 'Own Situation'},
-      { id: uuidv4(), name: 'Friendly Force Tracking'},
-      { id: uuidv4(), name: 'Plans and Orders'},
-      { id: uuidv4(), name: 'Globally significant'},
-    ]
-  }
 
-  const client = new Odrix(config)
-
-  client.on('state', async state => {
-    assert.strictEqual(state, 'READY')
-    assert.doesNotReject(client.shareProject(projectStructure))
-    client.stop()
-  })
-
-  client.start()
-})
