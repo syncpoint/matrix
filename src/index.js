@@ -83,18 +83,21 @@ class Odirx extends EventEmitter{
         name: projectStructure.name,
         room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
         visibility: 'private',
+        room_version: '9', // latest stable version as of nov21 (must be a string)
         creation_content: {
           type: 'm.space' // indicates that the room has the role of a SPACE
         }
       })
-    
+
       console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
       
       for (const layer of projectStructure.layers) {
+
         const { room_id: childRoomId } = await this.client.createRoom({
           name: layer.name,
           room_alias_name: layer.id,
-          visibility: 'private'
+          visibility: 'private',
+          room_version: '9', // latest stable version as of nov21 (must be a string)
         })
         
         console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
@@ -113,6 +116,25 @@ class Odirx extends EventEmitter{
 
         await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
         console.log('created link CHILD ROOM => PARENT SPACE')
+
+        /*
+          we need to send a m.room.join_rules event in order to allow all users that are invited to the space
+          to see all participating rooms
+        */
+        await this.client.sendStateEvent(
+          childRoomId,
+          'm.room.join_rules',
+          {
+            join_rule: 'restricted', // see enum JoinRule from @types/partials.ts
+            allow: [
+              {
+                type: 'm.room_membership', // see enum RestrictedAllowType from @types/partials.ts
+                room_id: spaceId
+              }
+            ]
+        })
+
+        console.log('created join_rules for making CHILD ROOM visible if PARENT SPACE is joined')
       }
           
       return Promise.resolve(projectStructure)
@@ -131,7 +153,16 @@ class Odirx extends EventEmitter{
     if (!exists) return Promise.reject(new Error(`No [Matrix] room found for projectId ${projectStructure.id}`))
 
     const result = await this.client.invite(roomId, matrixUserId)
+    
     return Promise.resolve(result)
+  }
+
+  async pendingInvitations () {
+    // returns all pending invitations for projects
+  }
+
+  async join (projectId) {
+
   }
 
   async post (layerId, message) {
