@@ -104,10 +104,10 @@ class Odirx extends EventEmitter{
       
         await this.client.sendStateEvent(spaceId, 'm.space.child', 
           {
-            auto_join: true,
-            suggested: true,
+            auto_join: false,
+            suggested: false,
             via: [
-            //  'matrix.org'
+              this.matrixServer
             ]
           },
           childRoomId
