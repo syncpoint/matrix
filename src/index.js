@@ -28,6 +28,32 @@ class Odirx extends EventEmitter{
     }) */
   }
 
+  /**** private functions ****/
+
+  #toOdinId = matrixId => matrixId 
+    ? matrixId
+      .replace(`:${this.matrixServer}`,'')
+      .substr(1)
+    : matrixId
+
+  #toOdinStructure = (room) => {
+    const alias = (room.canonical_alias || (room.getCanonicalAlias ? room.getCanonicalAlias() : undefined))
+    if (!alias) return
+  
+    const projectId = this.#toOdinId(alias)
+
+    return {
+      id: projectId,
+      name: room.name
+    }
+  }
+
+  #removeEmpty = (value) => {
+    return (value !== undefined)
+  }
+  
+  /**** public functions ****/
+
   start () {
     this.client.startClient()
   }
@@ -43,16 +69,12 @@ class Odirx extends EventEmitter{
     return (syncState !== null && syncState === 'PREPARED')
   }
 
-  async clearStores () {
-    return this.client.clearStores()
-  }
-
   async projectExists (projectId, matrixServer) {
     const alias = `#${projectId}:${matrixServer}`
     console.log(`looking for alias ${alias}`)
     return this.client.resolveRoomAlias(alias)
       .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
-      .catch((err) => {return Promise.resolve({ exists: false })})
+      .catch(() => {return Promise.resolve({ exists: false })})
   }
 
   /**
@@ -162,28 +184,54 @@ class Odirx extends EventEmitter{
    * @returns [ProjectStructure] that the current user is invited
    * @async
    */
-  async pendingInvitations () {
+  async invitedProjects () {
 
     const spacesWithInvitation = await this.client.getRooms()
       .filter(room => room.getType() === 'm.space')
       .filter(space => space.selfMembership === 'invite')
+      .filter(space => (space.getCanonicalAlias())) // must have an ODIN project ID
 
-    const projects = spacesWithInvitation.map(space => {
-      const alias = space.getCanonicalAlias()
-      if (!alias) return
-
-      const projectId = alias
-        .replace(`:${this.matrixServer}`,'')
-        .substr(1)
-
-      return {
-        id: projectId,
-        name: space.name,
-        layers: [] // not visible unless we join the project
-      }
-      
-    }).filter(entry => entry !== undefined)
+    const projects = spacesWithInvitation
+      .map(this.#toOdinStructure)
+      .filter(this.#removeEmpty)
+      .map(project => ({ ...project, ...{ layers: []} })) // a non-joined project can't show us it's hierarchy
  
+    return Promise.resolve(projects)
+  }
+
+  /**
+   * @returns [ProjectStructure] An array of projects the user is a member of
+   * @async
+   */
+  async projects () {
+    const rooms = await this.client.getRooms()
+    
+    const joinedProjectSpaces = rooms
+      .filter(room => room.getType() === 'm.space')
+      .filter(space => space.selfMembership === 'join')
+      .filter(space => (space.getCanonicalAlias())) // must have an ODIN project ID
+
+    const hierarchy = (await Promise.allSettled(
+      joinedProjectSpaces.map(async (space) =>  {
+        const h = (await this.client.getRoomHierarchy(space.roomId, 1000, 1, false, null))
+
+        return Promise.resolve({
+          spaceId: this.#toOdinId(space.getCanonicalAlias()),
+          rooms: h.rooms.filter(room => room.room_id !== space.roomId) // the space itself is also a room that is part of the hierarchy, but we don't want it bo be listed as a child room
+        })
+      })
+    )).map(promise => promise.value)
+    
+
+    const projects = joinedProjectSpaces.map(this.#toOdinStructure).map(odinProjectStructure => {
+      const space = hierarchy.find(space => space.spaceId === odinProjectStructure.id)
+
+      const layers = (space)
+        ? (space.rooms.map(room => this.#toOdinStructure(room)).filter(room => (room !== undefined)))
+        : []
+      return {...odinProjectStructure, ...{ layers }}
+    })
+
     return Promise.resolve(projects)
   }
 

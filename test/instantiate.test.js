@@ -38,7 +38,7 @@ describe('Use ODRIX API', async () => {
     // console.dir(projectStructure)
   
     const client = new Odrix(config)
-    // await client.clearStores()
+  
   
     client.on('state', async (state) => {
       console.log(`STATE: ${state}`)
@@ -46,8 +46,13 @@ describe('Use ODRIX API', async () => {
       try {
         /* await client.shareProject(projectStructure)
         await client.invite(projectStructure, INVITEE) */
-        const spacedWIthInvitation = await client.pendingInvitations()
-        console.dir(spacedWIthInvitation)
+        // const spacedWIthInvitation = await client.invitedProjects()
+        const projects = await client.projects()
+        console.dir(projects)
+
+        if (projects.length > 0) {
+          console.dir(projects[0].layers)
+        }
 
         // should be alias #c05054c7-deb1-43e9-b021-7d8b63e32022:thomass-macbook-pro.local
       } catch (error) {
