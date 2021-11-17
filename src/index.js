@@ -71,7 +71,7 @@ class Odirx extends EventEmitter{
 
   async projectExists (projectId, matrixServer) {
     const alias = `#${projectId}:${matrixServer}`
-    console.log(`looking for alias ${alias}`)
+
     return this.client.resolveRoomAlias(alias)
       .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
       .catch(() => {return Promise.resolve({ exists: false })})
@@ -123,7 +123,7 @@ class Odirx extends EventEmitter{
         
         // console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
       
-        // created link PARENT SPACE => CHILD ROOM
+        // create link PARENT SPACE => CHILD ROOM
         await this.client.sendStateEvent(spaceId, 'm.space.child', 
           {
             auto_join: false,
@@ -135,9 +135,8 @@ class Odirx extends EventEmitter{
           childRoomId
         )
 
-        // created link CHILD ROOM => PARENT SPACE
+        // create link CHILD ROOM => PARENT SPACE
         await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
-        
 
         /*
           we need to send a m.room.join_rules event in order to allow all users that are invited to the space
@@ -228,7 +227,7 @@ class Odirx extends EventEmitter{
   }
 
   async join (projectId) {
-
+    // join the space room and all rooms within the hierarchy
   }
 
   async post (layerId, message) {
