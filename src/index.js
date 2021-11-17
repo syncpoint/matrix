@@ -96,10 +96,9 @@ class Odirx extends EventEmitter{
     if (!this.isReady()) return Promise.reject(new Error('[Matrix] API is not ready'))
 
       const { exists } = await this.projectExists(projectStructure.id, this.matrixServer)
-
       if (exists) return Promise.reject(new Error(`The project identified by ${projectStructure.id} has already been shared`))
        
-      console.log('Creating SPACE and ROOMS ...')
+      // console.log('Creating SPACE and ROOMS ...')
 
       const { room_id: spaceId } = await this.client.createRoom({
         name: projectStructure.name,
@@ -111,7 +110,7 @@ class Odirx extends EventEmitter{
         }
       })
 
-      console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
+      // console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
       
       for (const layer of projectStructure.layers) {
 
@@ -122,8 +121,9 @@ class Odirx extends EventEmitter{
           room_version: '9', // latest stable version as of nov21 (must be a string)
         })
         
-        console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
+        // console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
       
+        // created link PARENT SPACE => CHILD ROOM
         await this.client.sendStateEvent(spaceId, 'm.space.child', 
           {
             auto_join: false,
@@ -134,10 +134,10 @@ class Odirx extends EventEmitter{
           },
           childRoomId
         )
-        console.log('created link PARENT SPACE => CHILD ROOM')
 
+        // created link CHILD ROOM => PARENT SPACE
         await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
-        console.log('created link CHILD ROOM => PARENT SPACE')
+        
 
         /*
           we need to send a m.room.join_rules event in order to allow all users that are invited to the space
@@ -155,18 +155,9 @@ class Odirx extends EventEmitter{
               }
             ]
         })
-
-        console.log('created join_rules for making CHILD ROOM visible if PARENT SPACE is joined')
       }
           
       return Promise.resolve(projectStructure)
-
-
-    // create space and the first room for the default layer
-    // subscribe to room events
-    // * messages
-    // * invitations
-    // * membership changes?
   }
 
   async invite (projectStructure, matrixUserId) {
@@ -213,7 +204,7 @@ class Odirx extends EventEmitter{
 
     const hierarchy = (await Promise.allSettled(
       joinedProjectSpaces.map(async (space) =>  {
-        const h = (await this.client.getRoomHierarchy(space.roomId, 1000, 1, false, null))
+        const h = (await this.client.getRoomHierarchy(space.roomId, 1000, 1, false, null)) // max 1k rooms within the project; it's just a magic number
 
         return Promise.resolve({
           spaceId: this.#toOdinId(space.getCanonicalAlias()),
@@ -222,15 +213,16 @@ class Odirx extends EventEmitter{
       })
     )).map(promise => promise.value)
     
+    const projects = joinedProjectSpaces
+      .map(this.#toOdinStructure)
+      .map(odinProjectStructure => {
+        const space = hierarchy.find(space => space.spaceId === odinProjectStructure.id)
 
-    const projects = joinedProjectSpaces.map(this.#toOdinStructure).map(odinProjectStructure => {
-      const space = hierarchy.find(space => space.spaceId === odinProjectStructure.id)
-
-      const layers = (space)
-        ? (space.rooms.map(room => this.#toOdinStructure(room)).filter(room => (room !== undefined)))
-        : []
-      return {...odinProjectStructure, ...{ layers }}
-    })
+        const layers = (space)
+          ? (space.rooms.map(room => this.#toOdinStructure(room)).filter(room => (room !== undefined)))
+          : []
+        return {...odinProjectStructure, ...{ layers }}
+      })
 
     return Promise.resolve(projects)
   }
