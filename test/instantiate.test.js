@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid')
 const Odrix = require('../src/index')
 
 const config = require('../src/config')
+const { checkServerIdentity } = require('tls')
 
 describe('Use ODRIX API', async () => {
   /* it('wait for ODRIX to be ready', async () => {
@@ -31,7 +32,8 @@ describe('Use ODRIX API', async () => {
       ]
     }
 
-    const INVITEE = '@s2:thomass-macbook-pro.local'
+    // const INVITEE = '@s2:thomass-macbook-pro.local'
+    const INVITEE = '@thomas:thomass-macbook-pro.local'
   
     // console.dir(projectStructure)
   
@@ -42,8 +44,12 @@ describe('Use ODRIX API', async () => {
       console.log(`STATE: ${state}`)
       assert.strictEqual(state, 'READY')
       try {
-        await client.shareProject(projectStructure)
-        await client.invite(projectStructure, INVITEE)
+        /* await client.shareProject(projectStructure)
+        await client.invite(projectStructure, INVITEE) */
+        const spacedWIthInvitation = await client.pendingInvitations()
+        console.dir(spacedWIthInvitation)
+
+        // should be alias #c05054c7-deb1-43e9-b021-7d8b63e32022:thomass-macbook-pro.local
       } catch (error) {
         console.error(error)
       } finally {

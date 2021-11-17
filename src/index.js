@@ -157,8 +157,34 @@ class Odirx extends EventEmitter{
     return Promise.resolve(result)
   }
 
+  /**
+   * 
+   * @returns [ProjectStructure] that the current user is invited
+   * @async
+   */
   async pendingInvitations () {
-    // returns all pending invitations for projects
+
+    const spacesWithInvitation = await this.client.getRooms()
+      .filter(room => room.getType() === 'm.space')
+      .filter(space => space.selfMembership === 'invite')
+
+    const projects = spacesWithInvitation.map(space => {
+      const alias = space.getCanonicalAlias()
+      if (!alias) return
+
+      const projectId = alias
+        .replace(`:${this.matrixServer}`,'')
+        .substr(1)
+
+      return {
+        id: projectId,
+        name: space.name,
+        layers: [] // not visible unless we join the project
+      }
+      
+    }).filter(entry => entry !== undefined)
+ 
+    return Promise.resolve(projects)
   }
 
   async join (projectId) {
