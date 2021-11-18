@@ -47,6 +47,8 @@ describe('Use ODRIX API', async () => {
         /* await client.shareProject(projectStructure)
         await client.invite(projectStructure, INVITEE) */
         // const spacedWIthInvitation = await client.invitedProjects()
+        // console.dir(spacedWIthInvitation)
+        // const joy = client.join(spacedWIthInvitation[0].id)
         const projects = await client.projects()
         console.dir(projects)
 

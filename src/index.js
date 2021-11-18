@@ -4,6 +4,9 @@ const EventEmitter = require('events')
 const matrixSDK = require('matrix-js-sdk')
 const { URL } = require('url')
 
+const MAX_NUMBER_OF_ROOMS = 1000
+const MAX_DEPTH = 1
+
 
 const extractServerName = baseUrl => {
   const url = new URL(baseUrl)
@@ -35,6 +38,8 @@ class Odirx extends EventEmitter{
       .replace(`:${this.matrixServer}`,'')
       .substr(1)
     : matrixId
+
+  #toMatrixAlias = odinId => `#${odinId}:${this.matrixServer}`
 
   #toOdinStructure = (room) => {
     const alias = (room.canonical_alias || (room.getCanonicalAlias ? room.getCanonicalAlias() : undefined))
@@ -69,8 +74,8 @@ class Odirx extends EventEmitter{
     return (syncState !== null && syncState === 'PREPARED')
   }
 
-  async projectExists (projectId, matrixServer) {
-    const alias = `#${projectId}:${matrixServer}`
+  async projectExists (projectId) {
+    const alias = this.#toMatrixAlias(projectId)
 
     return this.client.resolveRoomAlias(alias)
       .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
@@ -156,7 +161,7 @@ class Odirx extends EventEmitter{
         })
       }
           
-      return Promise.resolve(projectStructure)
+      return Promise.resolve()
   }
 
   async invite (projectStructure, matrixUserId) {
@@ -164,9 +169,8 @@ class Odirx extends EventEmitter{
     const {exists, room_id: roomId } = await this.projectExists(projectStructure.id, this.matrixServer)
     if (!exists) return Promise.reject(new Error(`No [Matrix] room found for projectId ${projectStructure.id}`))
 
-    const result = await this.client.invite(roomId, matrixUserId)
-    
-    return Promise.resolve(result)
+    await this.client.invite(roomId, matrixUserId)
+    return Promise.resolve()
   }
 
   /**
@@ -203,7 +207,9 @@ class Odirx extends EventEmitter{
 
     const hierarchy = (await Promise.allSettled(
       joinedProjectSpaces.map(async (space) =>  {
-        const h = (await this.client.getRoomHierarchy(space.roomId, 1000, 1, false, null)) // max 1k rooms within the project; it's just a magic number
+        // strange behaviour! Calling getRoomHierarchy with just the room id FAILS although 
+        // the other params are defined as optional
+        const h = (await this.client.getRoomHierarchy(space.roomId, MAX_NUMBER_OF_ROOMS, MAX_DEPTH, false, null))
 
         return Promise.resolve({
           spaceId: this.#toOdinId(space.getCanonicalAlias()),
@@ -226,8 +232,28 @@ class Odirx extends EventEmitter{
     return Promise.resolve(projects)
   }
 
+  /**
+   * 
+   * @param {*} projectId The ODIN project ID 
+   * @returns {Promise<void>}
+   * @async
+   */
   async join (projectId) {
-    // join the space room and all rooms within the hierarchy
+    // join the space room and all rooms within the hierarchy (depth of room hierarchy is supposed to be 1)
+    const alias = this.#toMatrixAlias(projectId)
+    const space = await this.client.joinRoom(alias)
+
+    // after joining all child-rooms of the space should be visible
+    const hierarchy = await this.client.getRoomHierarchy(space.roomId, MAX_NUMBER_OF_ROOMS, MAX_DEPTH, false)
+    // one line of code to join them all ;-)
+    await Promise.allSettled(
+      hierarchy.rooms
+        .filter(room => room.room_id !== space.roomId) // remove the space itself from the hierarchy list
+        .map(childRoom => this.client.joinRoom(childRoom.room_id))
+    )
+    // It's annoying that the matrix-js-sdk uses inconsistent property names (roomId vs. room_id)
+
+    return Promise.resolve()
   }
 
   async post (layerId, message) {
