@@ -45,6 +45,10 @@ describe('Use ODRIX API', async () => {
     client.on('membership/leave', projectStructure => {
       console.log(`Received kick-out from project ${projectStructure?.name}`)
     })
+
+    client.on('data', payload => {
+      console.dir(payload)
+    })
   
     client.on('state', async (state) => {
       console.log(`STATE: ${state}`)
@@ -57,14 +61,16 @@ describe('Use ODRIX API', async () => {
         // const spacedWIthInvitation = await client.invitedProjects()
         // console.dir(spacedWIthInvitation)
         // const joy = client.join(spacedWIthInvitation[0].id)
-        const projects = await client.projects()
+        /* const projects = await client.projects()
         console.dir(projects)
 
-        if (projects.length > 0) {
-          console.dir(projects[0].layers)
-        }
+        if (projects.length > 0 && projects[0].layers[0]) {
+          
+          const result = await client.post(projects[0].layers[0].id, { action: 'create', type: 'layer' })
+          console.dir(result)
+        } */
 
-        // should be alias #c05054c7-deb1-43e9-b021-7d8b63e32022:thomass-macbook-pro.local
+        
       } catch (error) {
         console.error(error)
       } finally {

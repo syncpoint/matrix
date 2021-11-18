@@ -7,6 +7,7 @@ const { URL } = require('url')
 const MAX_NUMBER_OF_ROOMS = 1000
 const MAX_DEPTH = 1
 
+const ODIN_MESSAGE_TYPE = 'io.syncpoint.odin.action'
 
 const extractServerName = baseUrl => {
   const url = new URL(baseUrl)
@@ -41,6 +42,29 @@ class Odirx extends EventEmitter{
 
       this.#emit(actionVerb, projectStructure)
     })
+
+
+    this.client.on('Room.timeline', async (event, room) => {
+      if (event.getType() !== ODIN_MESSAGE_TYPE) return
+      if (room.getType() === 'm.space') return // no messages posted in spaces
+      
+      const stateEvent = room.currentState.events.get('m.space.parent')
+      if (!stateEvent) {
+        return console.error(`Room ${$room.id} does not have a m.space.parent event! Will not handle this!`)
+      }
+      // stateEvent is of type "Map"
+      const { event: parentEvent } = stateEvent.values().next().value
+      const space = await this.client.getRoom(parentEvent.state_key)
+      const projectStructure = this.#toOdinStructure(space)
+      
+      const payload = {
+        project: projectStructure,
+        layer: this.#toOdinStructure(room),  
+        body: event.event.content
+      }
+
+      this.#emit('data', payload)
+    })
   }
 
   /**** private functions ****/
@@ -61,10 +85,10 @@ class Odirx extends EventEmitter{
     const alias = (room.canonical_alias || (room.getCanonicalAlias ? room.getCanonicalAlias() : undefined))
     if (!alias) return
   
-    const projectId = this.#toOdinId(alias)
+    const id = this.#toOdinId(alias)
 
     return {
-      id: projectId,
+      id,
       name: room.name
     }
   }
@@ -277,7 +301,12 @@ class Odirx extends EventEmitter{
   }
 
   async post (layerId, message) {
-    // post a CRUD message affecting the layerId
+    const alias = this.#toMatrixAlias(layerId)
+    const { room_id: roomId } = await this.client.resolveRoomAlias(alias)
+    if (!roomId) return Promise.reject(new Error(`Layer with id ${layerId} does not exist or you don't have access to it`))
+    console.dir(roomId)
+
+    return this.client.sendEvent(roomId, ODIN_MESSAGE_TYPE, message)
   }
 
 }
