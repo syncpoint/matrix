@@ -39,13 +39,13 @@ class Odirx extends EventEmitter{
       const projectStructure = this.#toOdinStructure(affectedRoom)
       const actionVerb = `membership/${member.membership}`
 
-      this.#post(actionVerb, projectStructure)
+      this.#emit(actionVerb, projectStructure)
     })
   }
 
   /**** private functions ****/
 
-  #post = (action, entity) => {
+  #emit = (action, entity) => {
     process.nextTick(() => this.emit(action, entity))
   }
 
