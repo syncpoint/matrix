@@ -38,11 +38,19 @@ describe('Use ODRIX API', async () => {
     // console.dir(projectStructure)
   
     const client = new Odrix(config)
-  
+
+    client.on('membership/invite', projectStructure => {
+      console.log(`Received invitation to join project ${projectStructure?.name}`)
+    })
+    client.on('membership/leave', projectStructure => {
+      console.log(`Received kick-out from project ${projectStructure?.name}`)
+    })
   
     client.on('state', async (state) => {
       console.log(`STATE: ${state}`)
       assert.strictEqual(state, 'READY')
+
+
       try {
         /* await client.shareProject(projectStructure)
         await client.invite(projectStructure, INVITEE) */
@@ -60,12 +68,12 @@ describe('Use ODRIX API', async () => {
       } catch (error) {
         console.error(error)
       } finally {
-        client.stop()
+        // client.stop()
       }
       
       
     })
-  
+    await client.login(config.userId, 'e8a224b7-2fa1-4a72-a908-2bb93c1628e2')
     client.start()
   })
 

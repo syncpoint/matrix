@@ -26,12 +26,28 @@ class Odirx extends EventEmitter{
       }
     })
 
-    /* this.client.on('event', (event) => {
-      console.dir(event)
-    }) */
+    /*
+      We assume that invitations, kicks or bans are made on a project (aka space) basis. 
+    */
+    this.client.on('RoomMember.membership', async (event, member) => {
+      if (member.userId !== this.client.getUserId()) return // does not affect the current user
+
+      const affectedRoom = await this.client.getRoom(member.roomId)
+      if (affectedRoom.getType() !== 'm.space') return // not a SPACE      
+      // TODO: UNCOMMENT THIS LINE // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
+
+      const projectStructure = this.#toOdinStructure(affectedRoom)
+      const actionVerb = `membership/${member.membership}`
+
+      this.#post(actionVerb, projectStructure)
+    })
   }
 
   /**** private functions ****/
+
+  #post = (action, entity) => {
+    process.nextTick(() => this.emit(action, entity))
+  }
 
   #toOdinId = matrixId => matrixId 
     ? matrixId
@@ -58,6 +74,10 @@ class Odirx extends EventEmitter{
   }
   
   /**** public functions ****/
+
+  async login (userId, password) {
+    return this.client.loginWithPassword(userId, password)
+  }
 
   start () {
     this.client.startClient()

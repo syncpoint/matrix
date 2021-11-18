@@ -1,8 +1,8 @@
 'use strict'
 
 require('dotenv').config()
-
-const config = ['MATRIX_BASE_URL', 'MATRIX_USER_ID', 'MATRIX_ACCESS_TOKEN']
+// , 'MATRIX_ACCESS_TOKEN'
+const config = ['MATRIX_BASE_URL', 'MATRIX_USER_ID']
 
 config.forEach(matrixConfig => {
   if (!process.env[matrixConfig]) {
