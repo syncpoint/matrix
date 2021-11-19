@@ -118,6 +118,19 @@ class Odirx extends EventEmitter{
     return (syncState !== null && syncState === 'PREPARED')
   }
 
+  /**
+   * 
+   * @returns {[User]} "All known users": whatever that means for servers wit tons of users
+   */
+  users () {
+    return this.client.getUsers().map(user => ({
+      userId: user.userId,
+      displayName: user.displayName,
+      currentlyActive: user.currentlyActive,
+      presence: user.presence
+    }))
+  }
+
   async projectExists (projectId) {
     const alias = this.#toMatrixAlias(projectId)
 

@@ -70,7 +70,8 @@ describe('Use ODRIX API', async () => {
           console.dir(result)
         } */
 
-        
+        const users = await client.users()
+        console.dir(users)
       } catch (error) {
         console.error(error)
       } finally {
