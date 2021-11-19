@@ -126,6 +126,13 @@ class Odirx extends EventEmitter{
     return (syncState !== null && syncState === 'PREPARED')
   }
 
+  async toBeReady () {
+    return new Promise((resolve, reject) => {
+      if (this.isReady()) return resolve()
+      this.once('state', resolve)
+    })
+  }
+
   /**
    * 
    * @returns {[User]} "All known users": whatever that means for servers wit tons of users

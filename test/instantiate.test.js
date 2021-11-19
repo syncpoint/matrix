@@ -50,38 +50,42 @@ describe('Use ODRIX API', async () => {
       console.dir(payload)
     })
   
-    client.on('state', async (state) => {
+    /* client.on('state', async (state) => {
       console.log(`STATE: ${state}`)
       assert.strictEqual(state, 'READY')
 
 
       try {
-        /* await client.shareProject(projectStructure)
-        await client.invite(projectStructure, INVITEE) */
+        // await client.shareProject(projectStructure)
+        // await client.invite(projectStructure, INVITEE)
         // const spacedWIthInvitation = await client.invitedProjects()
         // console.dir(spacedWIthInvitation)
         // const joy = client.join(spacedWIthInvitation[0].id)
-        /* const projects = await client.projects()
+        const projects = await client.projects()
         console.dir(projects)
 
         if (projects.length > 0 && projects[0].layers[0]) {
           
           const result = await client.post(projects[0].layers[0].id, { action: 'create', type: 'layer' })
           console.dir(result)
-        } */
+        }
 
-        const users = await client.users()
-        console.dir(users)
+        // const users = await client.users()
+        // console.dir(users)
       } catch (error) {
         console.error(error)
       } finally {
-        // client.stop()
+        await client.stop()
       }
       
       
-    })
+    }) */
     await client.login(config.userId, 'e8a224b7-2fa1-4a72-a908-2bb93c1628e2')
-    client.start()
+    await client.start()
+    await client.toBeReady()
+
+    console.log('CLient is ready :-)')
+    await client.stop()
   })
 
 })
