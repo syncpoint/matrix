@@ -1,8 +1,8 @@
 {
   "name": "syncpoint-matrix",
   "version": "1.0.0",
-  "description": "a buch of scripts to explore the [Matrix]",
-  "main": "index.js",
+  "description": "a bunch of functions to explore the [Matrix]",
+  "main": "src/index.js",
   "scripts": {
     "test": "mocha ./test/*"
   },
