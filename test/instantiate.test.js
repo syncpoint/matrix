@@ -90,9 +90,9 @@ describe('Use ODRIX API', async () => {
     console.dir(projects)
     
     
-    return client.stop()
-
-    
+    await client.stop()
+    return Promise.resolve()
+   
   })
 
 })

@@ -17,60 +17,47 @@ const extractServerName = baseUrl => {
 class Odirx extends EventEmitter{
   constructor (config) {
     super()
-  
     this.client = matrixSDK.createClient(config)
     this.matrixServer = extractServerName(config.baseUrl)
-
-    /* this.client.on('sync', (state) => {
-      if (state === 'PREPARED') {
-        this.emit('state', 'READY')
-      }
-    }) */
-
-    /*
-      We assume that invitations, kicks or bans are made on a project (aka space) basis. 
-    */
-    this.client.on('RoomMember.membership', async (event, member) => {
-      if (member.userId !== this.client.getUserId()) return // does not affect the current user
-
-      const affectedRoom = await this.client.getRoom(member.roomId)
-      if (!affectedRoom || affectedRoom.getType() !== 'm.space') return // not a SPACE      
-      // TODO: UNCOMMENT THIS LINE 
-      // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
-
-      const projectStructure = this.#toOdinStructure(affectedRoom)
-      const actionVerb = `membership/${member.membership}`
-
-      this.#emit(actionVerb, projectStructure)
-    })
-
-
-    this.client.on('Room.timeline', async (event, room) => {
-      if (event.getType() !== ODIN_MESSAGE_TYPE) return
-      if (room.getType() === 'm.space') return // no messages posted in spaces
-      
-      const stateEvent = room.currentState.events.get('m.space.parent')
-      if (!stateEvent) {
-        return console.error(`Room ${$room.id} does not have a m.space.parent event! Will not handle this!`)
-      }
-      // stateEvent is of type "Map"
-      const { event: parentEvent } = stateEvent.values().next().value
-      const space = await this.client.getRoom(parentEvent.state_key)
-      const projectStructure = this.#toOdinStructure(space)
-      
-      const payload = {
-        project: projectStructure,
-        layer: this.#toOdinStructure(room),  
-        body: event.event.content
-      }
-
-      this.#emit('data', payload)
-    })
   }
 
   /**** private functions ****/
 
-  #handleSyncState
+  #handleMembership =  async (event, member) => {
+    if (member.userId !== this.client.getUserId()) return // does not affect the current user
+
+    const affectedRoom = await this.client.getRoom(member.roomId)
+    if (!affectedRoom || affectedRoom.getType() !== 'm.space') return // not a SPACE      
+    // TODO: UNCOMMENT THIS LINE 
+    // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
+
+    const projectStructure = this.#toOdinStructure(affectedRoom)
+    const actionVerb = `membership/${member.membership}`
+
+    this.#emit(actionVerb, projectStructure)
+  }
+
+  #handleTimeline = async (event, room) => {
+    if (event.getType() !== ODIN_MESSAGE_TYPE) return
+    if (room.getType() === 'm.space') return // no messages posted in spaces
+    
+    const stateEvent = room.currentState.events.get('m.space.parent')
+    if (!stateEvent) {
+      return console.error(`Room ${$room.id} does not have a m.space.parent event! Will not handle this!`)
+    }
+    // stateEvent is of type "Map"
+    const { event: parentEvent } = stateEvent.values().next().value
+    const space = await this.client.getRoom(parentEvent.state_key)
+    const projectStructure = this.#toOdinStructure(space)
+    
+    const payload = {
+      project: projectStructure,
+      layer: this.#toOdinStructure(room),  
+      body: event.event.content
+    }
+
+    this.#emit('data', payload)
+  }
 
 
   #emit = (action, entity) => {
@@ -91,7 +78,6 @@ class Odirx extends EventEmitter{
     if (!alias) return
   
     const id = this.#toOdinId(alias)
-
     return {
       id,
       name: room.name
@@ -114,6 +100,8 @@ class Odirx extends EventEmitter{
    * @async
    */
   start () {
+    this.client.on('RoomMember.membership', this.#handleMembership)
+    this.client.on('Room.timeline', this.#handleTimeline)
     return this.client.startClient()
   }
 
@@ -121,6 +109,8 @@ class Odirx extends EventEmitter{
    * @async
    */
   stop () {
+    this.client.off('RoomMember.membership', this.#handleMembership)
+    this.client.off('Room.timeline', this.#handleTimeline)
     return this.client.stopClient()
   }
 
@@ -128,7 +118,7 @@ class Odirx extends EventEmitter{
     const syncState = this.client.getSyncState()
     // syncState is one out of ERROR, PREPARED, STOPPED, SYNCING, CATCHUP, RECONNECTING
     // https://github.com/matrix-org/matrix-js-sdk/blob/develop/src/sync.api.ts
-    return (syncState !== null && syncState === 'PREPARED')
+    return (syncState === 'PREPARED')
   }
 
   async toBeReady () {
