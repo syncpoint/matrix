@@ -34,7 +34,7 @@ class Odirx extends EventEmitter{
       if (member.userId !== this.client.getUserId()) return // does not affect the current user
 
       const affectedRoom = await this.client.getRoom(member.roomId)
-      if (affectedRoom.getType() !== 'm.space') return // not a SPACE      
+      if (!affectedRoom || affectedRoom.getType() !== 'm.space') return // not a SPACE      
       // TODO: UNCOMMENT THIS LINE // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
 
       const projectStructure = this.#toOdinStructure(affectedRoom)
