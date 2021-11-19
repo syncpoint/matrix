@@ -103,12 +103,20 @@ class Odirx extends EventEmitter{
     return this.client.loginWithPassword(userId, password)
   }
 
+  /**
+   * 
+   * @returns 
+   * @async
+   */
   start () {
-    this.client.startClient()
+    return this.client.startClient()
   }
 
+  /**
+   * @async
+   */
   stop () {
-    this.client.stopClient()
+    return this.client.stopClient()
   }
 
   isReady () {
