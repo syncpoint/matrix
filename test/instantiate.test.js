@@ -85,7 +85,14 @@ describe('Use ODRIX API', async () => {
     await client.toBeReady()
 
     console.log('CLient is ready :-)')
-    await client.stop()
+
+    const projects = await client.projects()
+    console.dir(projects)
+    
+    
+    return client.stop()
+
+    
   })
 
 })

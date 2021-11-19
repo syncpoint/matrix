@@ -21,11 +21,11 @@ class Odirx extends EventEmitter{
     this.client = matrixSDK.createClient(config)
     this.matrixServer = extractServerName(config.baseUrl)
 
-    this.client.on('sync', (state) => {
+    /* this.client.on('sync', (state) => {
       if (state === 'PREPARED') {
         this.emit('state', 'READY')
       }
-    })
+    }) */
 
     /*
       We assume that invitations, kicks or bans are made on a project (aka space) basis. 
@@ -35,7 +35,8 @@ class Odirx extends EventEmitter{
 
       const affectedRoom = await this.client.getRoom(member.roomId)
       if (!affectedRoom || affectedRoom.getType() !== 'm.space') return // not a SPACE      
-      // TODO: UNCOMMENT THIS LINE // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
+      // TODO: UNCOMMENT THIS LINE 
+      // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
 
       const projectStructure = this.#toOdinStructure(affectedRoom)
       const actionVerb = `membership/${member.membership}`
@@ -68,6 +69,9 @@ class Odirx extends EventEmitter{
   }
 
   /**** private functions ****/
+
+  #handleSyncState
+
 
   #emit = (action, entity) => {
     process.nextTick(() => this.emit(action, entity))
@@ -128,9 +132,17 @@ class Odirx extends EventEmitter{
   }
 
   async toBeReady () {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       if (this.isReady()) return resolve()
-      this.once('state', resolve)
+
+      const readyChecker = state => {
+        if (state === 'PREPARED') {
+          this.client.off('sync', readyChecker)
+          return resolve()
+        }          
+      }
+
+      this.client.on('sync', readyChecker)
     })
   }
 
