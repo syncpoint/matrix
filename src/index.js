@@ -82,6 +82,7 @@ class Odirx extends EventEmitter{
   #toMatrixAlias = odinId => `#${odinId}:${this.matrixServer}`
 
   #toOdinStructure = (room) => {
+    if (!room) return
     const alias = (room.canonical_alias || (room.getCanonicalAlias ? room.getCanonicalAlias() : undefined))
     if (!alias) return
   
