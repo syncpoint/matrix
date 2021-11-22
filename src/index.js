@@ -114,20 +114,17 @@ class Odirx extends EventEmitter{
     return this.client.stopClient()
   }
 
-  isReady () {
+  /* isReady () {
     const syncState = this.client.getSyncState()
     // syncState is one out of ERROR, PREPARED, STOPPED, SYNCING, CATCHUP, RECONNECTING
     // https://github.com/matrix-org/matrix-js-sdk/blob/develop/src/sync.api.ts
     console.debug(`@odrix #isReady: Current state is ${syncState}`)
     return (syncState === 'PREPARED')
-  }
+  } */
 
   async toBeReady () {
     return new Promise((resolve, reject) => {
-      const isReady = this.isReady()
-      console.debug(`@odrix #toBeReady: isReady is ${isReady}`)
-      if (isReady) return resolve()
-
+      
       const readyChecker = state => {
         console.debug(`@odrix #readyChecker: Current state is ${state}`)
         if (state === 'PREPARED') {
@@ -177,70 +174,70 @@ class Odirx extends EventEmitter{
    * }
    */
   async shareProject (projectStructure) {
-    if (!this.isReady()) return Promise.reject(new Error('[Matrix] API is not ready'))
+    /* if (!this.isReady()) return Promise.reject(new Error('[Matrix] API is not ready')) */
 
-      const { exists } = await this.projectExists(projectStructure.id, this.matrixServer)
-      if (exists) return Promise.reject(new Error(`The project identified by ${projectStructure.id} has already been shared`))
-       
-      // console.log('Creating SPACE and ROOMS ...')
+    const { exists } = await this.projectExists(projectStructure.id, this.matrixServer)
+    if (exists) return Promise.reject(new Error(`The project identified by ${projectStructure.id} has already been shared`))
+      
+    // console.log('Creating SPACE and ROOMS ...')
 
-      const { room_id: spaceId } = await this.client.createRoom({
-        name: projectStructure.name,
-        room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
+    const { room_id: spaceId } = await this.client.createRoom({
+      name: projectStructure.name,
+      room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
+      visibility: 'private',
+      room_version: '9', // latest stable version as of nov21 (must be a string)
+      creation_content: {
+        type: 'm.space' // indicates that the room has the role of a SPACE
+      }
+    })
+
+    // console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
+    
+    for (const layer of projectStructure.layers) {
+
+      const { room_id: childRoomId } = await this.client.createRoom({
+        name: layer.name,
+        room_alias_name: layer.id,
         visibility: 'private',
         room_version: '9', // latest stable version as of nov21 (must be a string)
-        creation_content: {
-          type: 'm.space' // indicates that the room has the role of a SPACE
-        }
       })
-
-      // console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
       
-      for (const layer of projectStructure.layers) {
+      // console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
+    
+      // create link PARENT SPACE => CHILD ROOM
+      await this.client.sendStateEvent(spaceId, 'm.space.child', 
+        {
+          auto_join: false,
+          suggested: false,
+          via: [
+            this.matrixServer
+          ]
+        },
+        childRoomId
+      )
 
-        const { room_id: childRoomId } = await this.client.createRoom({
-          name: layer.name,
-          room_alias_name: layer.id,
-          visibility: 'private',
-          room_version: '9', // latest stable version as of nov21 (must be a string)
-        })
+      // create link CHILD ROOM => PARENT SPACE
+      await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
+
+      /*
+        we need to send a m.room.join_rules event in order to allow all users that are invited to the space
+        to see all participating rooms
+      */
+      await this.client.sendStateEvent(
+        childRoomId,
+        'm.room.join_rules',
+        {
+          join_rule: 'restricted', // see enum JoinRule from @types/partials.ts
+          allow: [
+            {
+              type: 'm.room_membership', // see enum RestrictedAllowType from @types/partials.ts
+              room_id: spaceId
+            }
+          ]
+      })
+    }
         
-        // console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
-      
-        // create link PARENT SPACE => CHILD ROOM
-        await this.client.sendStateEvent(spaceId, 'm.space.child', 
-          {
-            auto_join: false,
-            suggested: false,
-            via: [
-              this.matrixServer
-            ]
-          },
-          childRoomId
-        )
-
-        // create link CHILD ROOM => PARENT SPACE
-        await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
-
-        /*
-          we need to send a m.room.join_rules event in order to allow all users that are invited to the space
-          to see all participating rooms
-        */
-        await this.client.sendStateEvent(
-          childRoomId,
-          'm.room.join_rules',
-          {
-            join_rule: 'restricted', // see enum JoinRule from @types/partials.ts
-            allow: [
-              {
-                type: 'm.room_membership', // see enum RestrictedAllowType from @types/partials.ts
-                room_id: spaceId
-              }
-            ]
-        })
-      }
-          
-      return Promise.resolve()
+    return Promise.resolve()
   }
 
   async invite (projectStructure, matrixUserId) {
