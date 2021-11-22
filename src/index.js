@@ -114,16 +114,12 @@ class Odirx extends EventEmitter{
     return this.client.stopClient()
   }
 
-  /* isReady () {
-    const syncState = this.client.getSyncState()
-    // syncState is one out of ERROR, PREPARED, STOPPED, SYNCING, CATCHUP, RECONNECTING
-    // https://github.com/matrix-org/matrix-js-sdk/blob/develop/src/sync.api.ts
-    console.debug(`@odrix #isReady: Current state is ${syncState}`)
-    return (syncState === 'PREPARED')
-  } */
-
+  /**
+   * 
+   * @returns A promise that fulfills when the API is ready
+   */
   async toBeReady () {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       
       const readyChecker = state => {
         console.debug(`@odrix #readyChecker: Current state is ${state}`)
@@ -174,7 +170,6 @@ class Odirx extends EventEmitter{
    * }
    */
   async shareProject (projectStructure) {
-    /* if (!this.isReady()) return Promise.reject(new Error('[Matrix] API is not ready')) */
 
     const { exists } = await this.projectExists(projectStructure.id, this.matrixServer)
     if (exists) return Promise.reject(new Error(`The project identified by ${projectStructure.id} has already been shared`))
