@@ -123,8 +123,10 @@ class Odirx extends EventEmitter{
   }
 
   async toBeReady () {
-    return new Promise(resolve => {
-      if (this.isReady()) return resolve()
+    return new Promise((resolve, reject) => {
+      const isReady = this.isReady()
+      console.debug(`@odrix #toBeReady: isReady is ${state}`)
+      if (isReady) return resolve()
 
       const readyChecker = state => {
         console.debug(`@odrix #readyChecker: Current state is ${state}`)
