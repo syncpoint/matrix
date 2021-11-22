@@ -118,6 +118,7 @@ class Odirx extends EventEmitter{
     const syncState = this.client.getSyncState()
     // syncState is one out of ERROR, PREPARED, STOPPED, SYNCING, CATCHUP, RECONNECTING
     // https://github.com/matrix-org/matrix-js-sdk/blob/develop/src/sync.api.ts
+    console.debug(`@odrix #isReady: Current state is ${syncState}`)
     return (syncState === 'PREPARED')
   }
 
@@ -126,10 +127,11 @@ class Odirx extends EventEmitter{
       if (this.isReady()) return resolve()
 
       const readyChecker = state => {
+        console.debug(`@odrix #readyChecker: Current state is ${state}`)
         if (state === 'PREPARED') {
           this.client.off('sync', readyChecker)
           return resolve()
-        }          
+        }       
       }
 
       this.client.on('sync', readyChecker)
