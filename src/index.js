@@ -13,7 +13,6 @@ const extractServerName = baseUrl => {
   const url = new URL(baseUrl)
   return url.hostname
 }
-
 class Odirx extends EventEmitter{
   constructor (config) {
     super()
@@ -38,12 +37,15 @@ class Odirx extends EventEmitter{
   }
 
   #handleTimeline = async (event, room) => {
-    if (event.getType() !== ODIN_MESSAGE_TYPE) return
+    if (event.getType() !== ODIN_MESSAGE_TYPE) {
+      console.log(`Ignoring message of type ${event.getType()}`)
+      return
+    }
     if (room.getType() === 'm.space') return // no messages posted in spaces
     
     const stateEvent = room.currentState.events.get('m.space.parent')
     if (!stateEvent) {
-      return console.error(`Room ${$room.id} does not have a m.space.parent event! Will not handle this!`)
+      return console.error(`Room ${room.id} does not have a m.space.parent event! Will not handle this!`)
     }
     // stateEvent is of type "Map"
     const { event: parentEvent } = stateEvent.values().next().value
@@ -58,7 +60,6 @@ class Odirx extends EventEmitter{
 
     this.#emit('data', payload)
   }
-
 
   #emit = (action, entity) => {
     process.nextTick(() => this.emit(action, entity))
