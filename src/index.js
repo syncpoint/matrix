@@ -1,5 +1,16 @@
 /* ODRIX is an interface that allows using ODIN primitives to be mapped to Matrix */
 
+/*
+  TODO:
+  # explicit vs. impilzit way to share (new) layers: 
+    shareLayer(layer, project) vs. shareProject(projectStructure)
+
+  # rename a project or a layer
+
+  # un-share a layer or project 
+  
+*/
+
 const EventEmitter = require('events')
 const matrixSDK = require('matrix-js-sdk')
 const { URL } = require('url')
@@ -88,6 +99,14 @@ class Odirx extends EventEmitter{
   #removeEmpty = (value) => {
     return (value !== undefined)
   }
+
+  #roomExists = async (id) => {
+    const alias = this.#toMatrixAlias(id)
+
+    return this.client.resolveRoomAlias(alias)
+      .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
+      .catch(() => {return Promise.resolve({ exists: false })})
+  }
   
   /**** public functions ****/
 
@@ -148,16 +167,21 @@ class Odirx extends EventEmitter{
   }
 
   async projectExists (projectId) {
-    const alias = this.#toMatrixAlias(projectId)
-
-    return this.client.resolveRoomAlias(alias)
-      .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
-      .catch(() => {return Promise.resolve({ exists: false })})
+    return this.#roomExists(projectId)
   }
+
+  async layerExists (layerId) {
+    return this.#roomExists(layerId)
+  }
+
+
 
   /**
    * 
    * @param {*} projectStructure : An object that contains the projectId, project name and an array of layers (ids and names)
+   * 
+   * If a project does not exist we create it, if it does, we skip the creation of the room for the project itself. This
+   * is also true for every layer.
    * 
    * {
    *  "id": "project-UUID",
@@ -172,12 +196,10 @@ class Odirx extends EventEmitter{
    */
   async shareProject (projectStructure) {
 
-    const { exists } = await this.projectExists(projectStructure.id, this.matrixServer)
-    if (exists) return Promise.reject(new Error(`The project identified by ${projectStructure.id} has already been shared`))
-      
-    // console.log('Creating SPACE and ROOMS ...')
-
-    const { room_id: spaceId } = await this.client.createRoom({
+    const project = await this.projectExists(projectStructure.id)
+    const { room_id: spaceId } = project.exists 
+      ? project 
+      : (await this.client.createRoom({
       name: projectStructure.name,
       room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
       visibility: 'private',
@@ -185,54 +207,61 @@ class Odirx extends EventEmitter{
       creation_content: {
         type: 'm.space' // indicates that the room has the role of a SPACE
       }
-    })
+    }))    
 
     // console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
     
     for (const layer of projectStructure.layers) {
 
-      const { room_id: childRoomId } = await this.client.createRoom({
-        name: layer.name,
-        room_alias_name: layer.id,
-        visibility: 'private',
-        room_version: '9', // latest stable version as of nov21 (must be a string)
-      })
-      
-      // console.log(`created ROOM for ${layer.name} with roomId ${childRoomId}`)
+      const room = await this.#roomExists(layer.id)
+      const { room_id: childRoomId } = room.exists
+        ? room
+        : (
+            await this.client.createRoom({
+              name: layer.name,
+              room_alias_name: layer.id,
+              visibility: 'private',
+              room_version: '9', // latest stable version as of nov21 (must be a string)
+            })
+          )
     
       // create link PARENT SPACE => CHILD ROOM
-      await this.client.sendStateEvent(spaceId, 'm.space.child', 
-        {
-          auto_join: false,
-          suggested: false,
-          via: [
-            this.matrixServer
-          ]
-        },
-        childRoomId
-      )
+      if (!room.exists) {
+        await this.client.sendStateEvent(spaceId, 'm.space.child', 
+          {
+            auto_join: false,
+            suggested: false,
+            via: [
+              this.matrixServer
+            ]
+          },
+          childRoomId
+        ) 
 
-      // create link CHILD ROOM => PARENT SPACE
-      await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
+        // create link CHILD ROOM => PARENT SPACE
+        await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
 
-      /*
-        we need to send a m.room.join_rules event in order to allow all users that are invited to the space
-        to see all participating rooms
-      */
-      await this.client.sendStateEvent(
-        childRoomId,
-        'm.room.join_rules',
-        {
-          join_rule: 'restricted', // see enum JoinRule from @types/partials.ts
-          allow: [
-            {
-              type: 'm.room_membership', // see enum RestrictedAllowType from @types/partials.ts
-              room_id: spaceId
-            }
-          ]
-      })
+        /*
+          we need to send a m.room.join_rules event in order to allow all users that are invited to the space
+          to see all participating rooms
+        */
+        await this.client.sendStateEvent(
+          childRoomId,
+          'm.room.join_rules',
+          {
+            join_rule: 'restricted', // see enum JoinRule from @types/partials.ts
+            allow: [
+              {
+                type: 'm.room_membership', // see enum RestrictedAllowType from @types/partials.ts
+                room_id: spaceId
+              }
+            ]
+          }
+        )
+      }
     }
-        
+    
+    // done with all layers
     return Promise.resolve()
   }
 
@@ -285,7 +314,7 @@ class Odirx extends EventEmitter{
 
         return Promise.resolve({
           spaceId: this.#toOdinId(space.getCanonicalAlias()),
-          rooms: h.rooms.filter(room => room.room_id !== space.roomId) // the space itself is also a room that is part of the hierarchy, but we don't want it bo be listed as a child room
+          rooms: h.rooms.filter(room => room.room_id !== space.roomId) // the space itself is also a room that is part of the hierarchy, but we don't want it to be listed as a child room
         })
       })
     )).map(promise => promise.value)
