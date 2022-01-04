@@ -265,12 +265,26 @@ class Odirx extends EventEmitter{
     return Promise.resolve()
   }
 
+  /**
+   * Invites a [matrix] user to join an ODIN project
+   * @param {ProjectStructure} projectStructure 
+   * @param {string} matrixUserId The id might either be fully qualified or only consist of the local part. In the latter case the
+   * current home server will be added.
+   * @returns 
+   */
   async invite (projectStructure, matrixUserId) {
+    if (!matrixUserId) return Promise.reject(new Error('No [matrix] user id'))
+
+    /* check if the matrixUserId is fully qualified and append the current user's home server otherwise */
+    const userId = matrixUserId.indexOf(':') > 0
+      ? matrixUserId
+      : `${matrixUserId}:${this.matrixServer}`
+
     // by making use of auto-join the invitation should be accepted immediadetly 
     const {exists, room_id: roomId } = await this.projectExists(projectStructure.id, this.matrixServer)
-    if (!exists) return Promise.reject(new Error(`No [Matrix] room found for projectId ${projectStructure.id}`))
+    if (!exists) return Promise.reject(new Error(`No [matrix] room found for projectId ${projectStructure.id}`))
 
-    await this.client.invite(roomId, matrixUserId)
+    await this.client.invite(roomId, userId)
     return Promise.resolve()
   }
 
@@ -369,7 +383,6 @@ class Odirx extends EventEmitter{
     const alias = this.#toMatrixAlias(layerId)
     const { room_id: roomId } = await this.client.resolveRoomAlias(alias)
     if (!roomId) return Promise.reject(new Error(`Layer with id ${layerId} does not exist or you don't have access to it`))
-    console.dir(roomId)
 
     return this.client.sendEvent(roomId, ODIN_MESSAGE_TYPE, message)
   }
