@@ -49,7 +49,7 @@ class Odirx extends EventEmitter{
 
   #handleTimeline = async (event, room) => {
     if (event.getType() !== ODIN_MESSAGE_TYPE) {
-      console.log(`Ignoring message of type ${event.getType()}`)
+      // console.log(`Ignoring message of type ${event.getType()}`)
       return
     }
     if (room.getType() === 'm.space') return // no messages posted in spaces
@@ -336,7 +336,7 @@ class Odirx extends EventEmitter{
   /**
    * 
    * @param {*} projectId The ODIN project ID 
-   * @returns {Promise<void>}
+   * @returns {Promise<ProjectStructure>}
    * @async
    */
   async join (projectId) {
@@ -354,7 +354,15 @@ class Odirx extends EventEmitter{
     )
     // It's annoying that the matrix-js-sdk uses inconsistent property names (roomId vs. room_id)
 
-    return Promise.resolve()
+    const projectStructure = {
+      id: projectId,
+      name: space.name,
+      layers: hierarchy.rooms
+                .filter(room => room.room_id !== space.roomId) // remove the space itself from the hierarchy list
+                .map(this.#toOdinStructure)
+    }
+
+    return Promise.resolve(projectStructure)
   }
 
   async post (layerId, message) {
