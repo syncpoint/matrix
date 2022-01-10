@@ -20,14 +20,17 @@ const MAX_DEPTH = 1
 
 const ODIN_MESSAGE_TYPE = 'io.syncpoint.odin.action'
 
+
 const extractServerName = baseUrl => {
   const url = new URL(baseUrl)
   return url.hostname
 }
+
 class Odirx extends EventEmitter{
   constructor (config) {
     super()
-    this.client = matrixSDK.createClient(config)
+    this.config = config
+    // this.client = matrixSDK.createClient(config)
     this.matrixServer = extractServerName(config.baseUrl)
   }
 
@@ -119,10 +122,36 @@ class Odirx extends EventEmitter{
    * @returns 
    * @async
    */
-  start () {
+   async start () {
+
+    /* IndexedDB Store for Browsers, Memorystore for all other runtimes */
+    const getStore = async () => {
+      if (!(window && window.indexedDB && window.localStorage)) return Promise.resolve(new matrixSDK.MemoryStore())
+      const idxStore = new matrixSDK.IndexedDBStore({ indexedDB: window.indexedDB, localStorage: window.localStorage })
+      await idxStore.startup()
+      return Promise.resolve(idxStore)
+    }
+
+    const store = await getStore()
+    this.client = matrixSDK.createClient({...this.config, ...{ store }})
+    
     this.client.on('RoomMember.membership', this.#handleMembership)
     this.client.on('Room.timeline', this.#handleTimeline)
-    return this.client.startClient()
+
+    
+    const toBeReady = new Promise((resolve) => {
+      const readyChecker = state => {
+        console.log(`@odrix #readyChecker: Current state is ${state}`)
+        if (state === 'PREPARED') {
+          this.client.off('sync', readyChecker)
+          return resolve()
+        }       
+      }  
+      this.client.on('sync', readyChecker)
+    })
+
+    this.client.startClient()
+    return toBeReady
   }
 
   /**
@@ -136,26 +165,7 @@ class Odirx extends EventEmitter{
 
   /**
    * 
-   * @returns A promise that fulfills when the API is ready
-   */
-  async toBeReady () {
-    return new Promise(resolve => {
-      
-      const readyChecker = state => {
-        console.debug(`@odrix #readyChecker: Current state is ${state}`)
-        if (state === 'PREPARED') {
-          this.client.off('sync', readyChecker)
-          return resolve()
-        }       
-      }
-
-      this.client.on('sync', readyChecker)
-    })
-  }
-
-  /**
-   * 
-   * @returns {[User]} "All known users": whatever that means for servers wit tons of users
+   * @returns {[User]} "All known users": whatever that means for servers with tons of users
    */
   users () {
     return this.client.getUsers().map(user => ({
