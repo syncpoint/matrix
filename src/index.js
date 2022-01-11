@@ -78,6 +78,34 @@ class Odrix extends EventEmitter{
     this.#emit('data', payload)
   }
 
+  #handleHierarchy = async (event, affectedRoomState) => {
+    if (event.getType() !== 'm.space.child') return
+    if (event.getSender() === this.client.getUserId()) return
+
+    /* 
+      OK, someone added a child room.
+
+      TODO: What to do if a child room is removed?
+    */
+    
+    const childRoomId = event.getStateKey()
+    if (!childRoomId) {
+      console.error('#handleHierarchy: no child room id, aborting')
+      return
+    }
+    
+    const parentRoomId = event.getRoomId()
+
+    const { rooms } = await this.client.getRoomHierarchy(parentRoomId, MAX_NUMBER_OF_ROOMS, MAX_DEPTH, false, null)
+    const newRoom = rooms.find(room => room.room_id === childRoomId)
+    const parentRoom = rooms.find(room => room.room_id === parentRoomId)
+
+    const projectStructure = this.#toOdinStructure(parentRoom)
+    projectStructure.layers = [this.#toOdinStructure(newRoom)]
+
+    this.#emit('hierarchy/new', projectStructure)    
+  }
+
   #emit = (action, entity) => {
     process.nextTick(() => this.emit(action, entity))
   }
@@ -141,6 +169,7 @@ class Odrix extends EventEmitter{
     
     this.client.on('RoomMember.membership', this.#handleMembership)
     this.client.on('Room.timeline', this.#handleTimeline)
+    this.client.on('RoomState.events', this.#handleHierarchy)
 
     
     const toBeReady = new Promise((resolve) => {
@@ -164,6 +193,7 @@ class Odrix extends EventEmitter{
   stop () {
     this.client.off('RoomMember.membership', this.#handleMembership)
     this.client.off('Room.timeline', this.#handleTimeline)
+    this.client.off('RoomState.events', this.#handleHierarchy)
     return this.client.stopClient()
   }
 
@@ -239,18 +269,8 @@ class Odrix extends EventEmitter{
             })
           )
     
-      // create link PARENT SPACE => CHILD ROOM
+      
       if (!room.exists) {
-        await this.client.sendStateEvent(spaceId, 'm.space.child', 
-          {
-            auto_join: false,
-            suggested: false,
-            via: [
-              this.matrixServer
-            ]
-          },
-          childRoomId
-        ) 
 
         // create link CHILD ROOM => PARENT SPACE
         await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
@@ -271,6 +291,23 @@ class Odrix extends EventEmitter{
               }
             ]
           }
+        )
+        /* 
+          The order of calls matter, because we join the child room on receiving
+          the m.space.child event from the parent. Thus, this call needs to be after
+          any events regarding the child room.
+        */
+
+        // create link PARENT SPACE => CHILD ROOM
+        await this.client.sendStateEvent(spaceId, 'm.space.child', 
+          {
+            auto_join: false,
+            suggested: false,
+            via: [
+              this.matrixServer
+            ]
+          },
+          childRoomId
         )
       }
     }
