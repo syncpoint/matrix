@@ -432,7 +432,7 @@ class Odrix extends EventEmitter{
 
   async joinLayers (entities) {
     const layers = Array.isArray(entities) ? entities : [entities]
-    return Promise.all(layers.map(layer => this.client.joinRoom(layer.id)))
+    return Promise.all(layers.map(layer => this.client.joinRoom(this.#toMatrixAlias(layer.id))))
   }
 
   async post (layerId, message) {
