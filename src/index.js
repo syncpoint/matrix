@@ -129,8 +129,9 @@ class Odrix extends EventEmitter{
 
     /* IndexedDB Store for Browsers, Memorystore for all other runtimes */
     const getStore = async () => {
-      if (!(window && window.indexedDB && window.localStorage)) return Promise.resolve(new matrixSDK.MemoryStore())
-      const idxStore = new matrixSDK.IndexedDBStore({ indexedDB: window.indexedDB, localStorage: window.localStorage })
+      if (!global.window || !global.window.indexedDB || !global.window.localStorage) return Promise.resolve(new matrixSDK.MemoryStore())
+      const idxStore = new matrixSDK.IndexedDBStore({ indexedDB: global.window.indexedDB, localStorage: global.window.localStorage })
+      
       await idxStore.startup()
       return Promise.resolve(idxStore)
     }
