@@ -26,7 +26,7 @@ const extractServerName = baseUrl => {
   return url.hostname
 }
 
-class Odirx extends EventEmitter{
+class Odrix extends EventEmitter{
   constructor (config) {
     super()
     this.config = config
@@ -40,7 +40,10 @@ class Odirx extends EventEmitter{
     if (member.userId !== this.client.getUserId()) return // does not affect the current user
 
     const affectedRoom = await this.client.getRoom(member.roomId)
-    if (!affectedRoom || affectedRoom.getType() !== 'm.space') return // not a SPACE      
+    if (!affectedRoom || affectedRoom.getType() !== 'm.space') {
+      console.log('#handleMembership: affected room is not of type m.space ', affectedRoom)
+      return // not a SPACE      
+    }
     // TODO: UNCOMMENT THIS LINE 
     // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
 
@@ -52,7 +55,7 @@ class Odirx extends EventEmitter{
 
   #handleTimeline = async (event, room) => {
     if (event.getType() !== ODIN_MESSAGE_TYPE) {
-      // console.log(`Ignoring message of type ${event.getType()}`)
+      console.log(`Ignoring message of type ${event.getType()}`)
       return
     }
     if (room.getType() === 'm.space') return // no messages posted in spaces
@@ -399,4 +402,4 @@ class Odirx extends EventEmitter{
 
 }
 
-module.exports = Odirx
+module.exports = Odrix
