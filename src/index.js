@@ -430,6 +430,11 @@ class Odrix extends EventEmitter{
     return Promise.resolve(projectStructure)
   }
 
+  async joinLayers (entities) {
+    const layers = Array.isArray(entities) ? entities : [entities]
+    return Promise.all(layers.map(layer => this.client.joinRoom(layer.id)))
+  }
+
   async post (layerId, message) {
     const alias = this.#toMatrixAlias(layerId)
     const { room_id: roomId } = await this.client.resolveRoomAlias(alias)
