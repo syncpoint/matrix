@@ -141,12 +141,22 @@ class Odrix extends EventEmitter{
       .then((data) => {return Promise.resolve({ ...data, ...{ exists: true }})})
       .catch(() => {return Promise.resolve({ exists: false })})
   }
-  
-  /**** public functions ****/
 
-  async login (userId, password) {
-    return this.client.loginWithPassword(userId, password)
+  /**** STATIC */
+
+  /**
+   * 
+   * @param {string} baseUrl 
+   * @param {string} userId 
+   * @param {string} password 
+   * @returns {LoginResult} An object that contains the access_token
+   */
+  static async login (baseUrl, userId, password) {
+    const client = matrixSDK.createClient({ baseUrl })
+    return client.loginWithPassword(userId, password)
   }
+
+  /**** public functions ****/
 
   /**
    * 
