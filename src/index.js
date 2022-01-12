@@ -44,8 +44,7 @@ class Odrix extends EventEmitter{
       console.log('#handleMembership: affected room is not of type m.space ', affectedRoom)
       return // not a SPACE      
     }
-    // TODO: UNCOMMENT THIS LINE 
-    // if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
+    if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
 
     const projectStructure = this.#toOdinStructure(affectedRoom)
     const actionVerb = `membership/${member.membership}`
