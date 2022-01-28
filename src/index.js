@@ -57,7 +57,12 @@ class Odrix extends EventEmitter{
       console.log(`Ignoring message of type ${event.getType()}`)
       return
     }
-    if (event.getSender() === this.client.getUserId()) return // do not handle messages sent by the current user
+    /*
+      28jan22/HAL
+      As long as we use the concept of a suppressor we need to receive a remote echo for locally generated
+      events. This we can not skip events that are sent by the current user!
+    */
+    // if (event.getSender() === this.client.getUserId()) return // do not handle messages sent by the current user
     if (room.getType() === 'm.space') return // no messages posted in spaces
     
     const stateEvent = room.currentState.events.get('m.space.parent')
