@@ -209,6 +209,7 @@ class Odrix extends EventEmitter{
     this.client.off('RoomMember.membership', this.#handleMembership)
     this.client.off('Room.timeline', this.#handleTimeline)
     this.client.off('RoomState.events', this.#handleHierarchy)
+    this.client.store.save(true)
     return this.client.stopClient()
   }
 
