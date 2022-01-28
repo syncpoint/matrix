@@ -250,18 +250,87 @@ class Odrix extends EventEmitter{
    */
   async shareProject (projectStructure) {
 
+    const SPACE_POWERLEVELS = () => {
+      const DEFAULT = 
+      {
+        'users': {},
+        'users_default': 0,
+        'events': {
+          'm.room.name': 50,
+          'm.room.power_levels': 100,
+          'm.room.history_visibility': 100,
+          'm.room.canonical_alias': 100,
+          'm.room.avatar': 50,
+          'm.room.tombstone': 100,
+          'm.room.server_acl': 100,
+          'm.room.encryption': 100,
+          'm.space.child': 0, // every member is allowed to add child rooms to the space
+          'm.room.topic': 50,
+          'm.room.pinned_events': 50,
+          'm.reaction': 100
+        },
+        'events_default': 100,
+        'state_default': 50,
+        'ban': 50,
+        'kick': 50,
+        'redact': 50,
+        'invite': 0,
+        'historical': 100
+      }
+      const effectivePowerlevels = {...DEFAULT}
+      effectivePowerlevels.users[this.client.getUserId()] = 100
+      console.dir(effectivePowerlevels)
+      return effectivePowerlevels
+    }
+
+    const CHILD_POWERLEVELS = () => {
+      const DEFAULT = 
+      {
+        'users': {},
+        'users_default': 0,
+        'events': {
+          'm.room.name': 50,
+          'm.room.power_levels': 100,
+          'm.room.history_visibility': 100,
+          'm.room.canonical_alias': 100,
+          'm.room.avatar': 50,
+          'm.room.tombstone': 100,
+          'm.room.server_acl': 100,
+          'm.room.encryption': 100,
+          'm.space.parent': 0
+        },
+        'events_default': 0,
+        'state_default': 50,
+        'ban': 50,
+        'kick': 50,
+        'redact': 50,
+        'invite': 0,
+        'historical': 100
+      }
+      const effectivePowerlevels = {...DEFAULT}
+      effectivePowerlevels.users[this.client.getUserId()] = 100
+      console.dir(effectivePowerlevels)
+      return effectivePowerlevels
+    }
+
+
     const project = await this.projectExists(projectStructure.id)
     const { room_id: spaceId } = project.exists 
       ? project 
       : (await this.client.createRoom({
-      name: projectStructure.name,
-      room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
-      visibility: 'private',
-      room_version: '9', // latest stable version as of nov21 (must be a string)
-      creation_content: {
-        type: 'm.space' // indicates that the room has the role of a SPACE
-      }
-    }))    
+          name: projectStructure.name,
+          room_alias_name: projectStructure.id, // Sets the canonical_alias which is UNIQUE for ALL rooms!
+          visibility: 'private',
+          room_version: '9', // latest stable version as of nov21 (must be a string)
+          creation_content: {
+            type: 'm.space' // indicates that the room has the role of a SPACE
+          }
+        })
+        )    
+    
+    if (!project.exists) {
+      this.client.sendStateEvent(spaceId, 'm.room.power_levels', SPACE_POWERLEVELS())
+    }
 
     // console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
     
@@ -284,6 +353,7 @@ class Odrix extends EventEmitter{
 
         // create link CHILD ROOM => PARENT SPACE
         await this.client.sendStateEvent(childRoomId, 'm.space.parent', {}, spaceId)
+        await this.client.sendStateEvent(childRoomId, 'm.room.power_levels', CHILD_POWERLEVELS())
 
         /*
           we need to send a m.room.join_rules event in order to allow all users that are invited to the space
