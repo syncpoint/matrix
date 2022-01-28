@@ -180,18 +180,17 @@ class Odrix extends EventEmitter{
     }
 
     const store = await getStore()
-    this.client = matrixSDK.createClient({...this.config, ...{ store }})
-    
-    this.client.on('RoomMember.membership', this.#handleMembership)
-    this.client.on('Room.timeline', this.#handleTimeline)
-    this.client.on('RoomState.events', this.#handleHierarchy)
-
+    this.client = matrixSDK.createClient({...this.config, ...{ store, useAuthorizationHeader: true, timelineSupport: true }})
     
     const toBeReady = new Promise((resolve) => {
       const readyChecker = state => {
         console.log(`@odrix #readyChecker: Current state is ${state}`)
         if (state === 'PREPARED') {
           this.client.off('sync', readyChecker)
+
+          this.client.on('RoomMember.membership', this.#handleMembership)
+          this.client.on('Room.timeline', this.#handleTimeline)
+          this.client.on('RoomState.events', this.#handleHierarchy)
           return resolve()
         }       
       }  

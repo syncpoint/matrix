@@ -1,6 +1,6 @@
 {
   "name": "syncpoint-matrix",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "a bunch of functions to explore the [Matrix]",
   "main": "src/index.js",
   "scripts": {
