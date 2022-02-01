@@ -398,7 +398,7 @@ class Odrix extends EventEmitter{
     }
     
     // done with all layers
-    return Promise.resolve()
+    return Promise.resolve(projectStructure)
   }
 
   /**
