@@ -37,19 +37,26 @@ class Odrix extends EventEmitter{
   /**** private functions ****/
 
   #handleMembership =  async (event, member) => {
-    if (member.userId !== this.client.getUserId()) return // does not affect the current user
+    const uid = this.client.getUserId()
+    if (member.userId !== uid) return // does not affect the current user
 
-    const affectedRoom = await this.client.getRoom(member.roomId)
-    if (!affectedRoom || affectedRoom.getType() !== 'm.space') {
-      console.log('#handleMembership: affected room is not of type m.space ', affectedRoom)
-      return // not a SPACE      
-    }
-    if (!affectedRoom.getCanonicalAlias()) return // not an ODIN project
+    /*
+      02feb22/HAL 
+      
+      INSPECT:
+      Looks like we do not have access to the room data at the moment
+      of receiving the event. getRoom() and event getRoomSUmmary() seem
+      to fail du to an unknown reason. Thus we are not able to check
+      if the room is an ODIN related space.
+      Clients should use invitedProjects() in order to see
+      if there are any new projects.
 
-    const projectStructure = this.#toOdinStructure(affectedRoom)
+      NOTE:
+      This MAY be related to the introduction of custom powerlevels.
+    */
+    
     const actionVerb = `membership/${member.membership}`
-
-    this.#emit(actionVerb, projectStructure)
+    this.#emit(actionVerb)
   }
 
   #handleTimeline = async (event, room) => {
