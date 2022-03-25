@@ -479,7 +479,7 @@ class Odrix extends EventEmitter{
     const projects = joinedProjectSpaces
       .map(this.#toOdinStructure)
       .map(odinProjectStructure => {
-        const space = hierarchy.find(space => space.spaceId === odinProjectStructure.id)
+        const space = hierarchy.find(space => space?.spaceId === odinProjectStructure.id)
 
         const layers = (space)
           ? (space.rooms.map(room => this.#toOdinStructure(room)).filter(room => (room !== undefined)))
