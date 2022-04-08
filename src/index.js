@@ -65,11 +65,13 @@ class Odrix extends EventEmitter{
       return
     }
     /*
-      28jan22/HAL
+      08apr22/HAL
       As long as we use the concept of a suppressor we need to receive a remote echo for locally generated
       events. This we can not skip events that are sent by the current user!
+      In order to allow otherwise there is a new config flag "alwaysEmit" that is normally falsy. If
+      this flag is truthy we'll handle timeline events that are created by the current user.
     */
-    // if (event.getSender() === this.client.getUserId()) return // do not handle messages sent by the current user
+    if (event.getSender() === this.client.getUserId() && !this.config.alwaysEmit) return
     if (room.getType() === 'm.space') return // no messages posted in spaces
     
     const stateEvent = room.currentState.events.get('m.space.parent')
