@@ -1,6 +1,6 @@
 {
   "name": "syncpoint-matrix",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "a bunch of functions to explore the [Matrix]",
   "main": "src/index.js",
   "scripts": {
@@ -18,7 +18,8 @@
   "homepage": "https://github.com/syncpoint/matrix#readme",
   "dependencies": {
     "dotenv": "^10.0.0",
-    "matrix-js-sdk": "^16.0.1"
+    "matrix-js-sdk": "^16.0.1",
+    "pino": "^7.10.0"
   },
   "devDependencies": {
     "mocha": "^9.1.3",

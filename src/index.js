@@ -13,6 +13,9 @@
 
 const EventEmitter = require('events')
 const matrixSDK = require('matrix-js-sdk')
+const logger = require('pino')({
+  level: process.env.LOG_LEVEL || 'info'
+})
 const { URL } = require('url')
 
 const MAX_NUMBER_OF_ROOMS = 1000
@@ -32,6 +35,7 @@ class Odrix extends EventEmitter{
     this.config = config
     // this.client = matrixSDK.createClient(config)
     this.matrixServer = extractServerName(config.baseUrl)
+    logger.debug(`extracted server name ${this.matrixServer} from ${config.baseUrl}`)
   }
 
   /**** private functions ****/
@@ -56,12 +60,13 @@ class Odrix extends EventEmitter{
     */
     
     const actionVerb = `membership/${member.membership}`
+    logger.debug(`#handleMembership: emitting ${actionVerb} for current userId ${uid}`)
     this.#emit(actionVerb)
   }
 
   #handleTimeline = async (event, room) => {
     if (event.getType() !== ODIN_MESSAGE_TYPE) {
-      console.log(`Ignoring message of type ${event.getType()}`)
+      logger.debug(`#handleTimeline: Ignoring message of type ${event.getType()}`)
       return
     }
     /*
@@ -71,12 +76,15 @@ class Odrix extends EventEmitter{
       In order to allow otherwise there is a new config flag "alwaysEmit" that is normally falsy. If
       this flag is truthy we'll handle timeline events that are created by the current user.
     */
-    if (event.getSender() === this.client.getUserId() && !this.config.alwaysEmit) return
+    if (event.getSender() === this.client.getUserId() && !this.config.alwaysEmit) {
+      logger.debug(`#handleTimeline: sender ${event.getSender()} equals current user Id ${this.client.getUserId()} and alwaysEmit is false, skipping this message`)
+      return
+    }
     if (room.getType() === 'm.space') return // no messages posted in spaces
     
     const stateEvent = room.currentState.events.get('m.space.parent')
     if (!stateEvent) {
-      return console.error(`Room ${room.id} does not have a m.space.parent event! Will not handle this!`)
+      return logger.error(`Room ${room.id} does not have a m.space.parent event! Will not handle this!`)
     }
     // stateEvent is of type "Map"
     const { event: parentEvent } = stateEvent.values().next().value
@@ -88,13 +96,16 @@ class Odrix extends EventEmitter{
       layer: this.#toOdinStructure(room),  
       body: event.event.content
     }
-
+    logger.trace('#handleTimeline: emitting data', payload)
     this.#emit('data', payload)
   }
 
   #handleHierarchy = async (event, affectedRoomState) => {
     if (event.getType() !== 'm.space.child') return
-    if (event.getSender() === this.client.getUserId()) return
+    if (event.getSender() === this.client.getUserId() && !this.config.alwaysEmit) {
+      logger.debug(`#handleHierarchy: sender ${event.getSender()} equals current user Id ${this.client.getUserId()} and alwaysEmit is false, skipping this message`)
+      return
+    }
 
     /* 
       OK, someone added a child room.
@@ -104,7 +115,7 @@ class Odrix extends EventEmitter{
     
     const childRoomId = event.getStateKey()
     if (!childRoomId) {
-      console.error('#handleHierarchy: no child room id, aborting')
+      logger.error('#handleHierarchy: no child room id, aborting')
       return
     }
     
@@ -116,7 +127,7 @@ class Odrix extends EventEmitter{
 
     const projectStructure = this.#toOdinStructure(parentRoom)
     projectStructure.layers = [this.#toOdinStructure(newRoom)]
-
+    logger.trace(`#handleHierarchy: emitting hierarchy/new`, projectStructure)
     this.#emit('hierarchy/new', projectStructure)    
   }
 
@@ -181,7 +192,10 @@ class Odrix extends EventEmitter{
 
     /* IndexedDB Store for Browsers, Memorystore for all other runtimes */
     const getStore = async () => {
-      if (!global.window || !global.window.indexedDB || !global.window.localStorage) return Promise.resolve(new matrixSDK.MemoryStore())
+      if (!global.window || !global.window.indexedDB || !global.window.localStorage) {
+        logger.debug('#getStorage: no window(indexedDB,localStorage) objects found, looks like this is not a browser environment')
+        return Promise.resolve(new matrixSDK.MemoryStore())
+      }
       const idxStore = new matrixSDK.IndexedDBStore({ indexedDB: global.window.indexedDB, localStorage: global.window.localStorage, dbName })
       
       await idxStore.startup()
@@ -193,8 +207,9 @@ class Odrix extends EventEmitter{
     
     const toBeReady = new Promise((resolve) => {
       const readyChecker = state => {
-        console.log(`@odrix #readyChecker: Current state is ${state}`)
+        logger.info(`@odrix #readyChecker: Current state is ${state}`)
         if (state === 'PREPARED') {
+          logger.info('State is PREPARED now')
           this.client.off('sync', readyChecker)
 
           this.client.on('RoomMember.membership', this.#handleMembership)
@@ -218,6 +233,7 @@ class Odrix extends EventEmitter{
     this.client.off('Room.timeline', this.#handleTimeline)
     this.client.off('RoomState.events', this.#handleHierarchy)
     this.client.store.save(true)
+    logger.info('stopping ODRIX client ...')
     return this.client.stopClient()
   }
 
@@ -293,7 +309,7 @@ class Odrix extends EventEmitter{
       }
       const effectivePowerlevels = {...DEFAULT}
       effectivePowerlevels.users[this.client.getUserId()] = 100
-      console.dir(effectivePowerlevels)
+      logger.debug(effectivePowerlevels)
       return effectivePowerlevels
     }
 
@@ -323,7 +339,7 @@ class Odrix extends EventEmitter{
       }
       const effectivePowerlevels = {...DEFAULT}
       effectivePowerlevels.users[this.client.getUserId()] = 100
-      console.dir(effectivePowerlevels)
+      logger.debug(effectivePowerlevels)
       return effectivePowerlevels
     }
 
@@ -346,7 +362,7 @@ class Odrix extends EventEmitter{
       this.client.sendStateEvent(spaceId, 'm.room.power_levels', SPACE_POWERLEVELS())
     }
 
-    // console.log(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
+    logger.debug(`created SPACE for ${projectStructure.name} with roomId ${spaceId}`)
     
     for (const layer of projectStructure.layers) {
 
