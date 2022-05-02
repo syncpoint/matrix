@@ -1,5 +1,5 @@
 {
-  "name": "odrix",
+  "name": "@syncpoint/odrix",
   "version": "1.2.0",
   "description": "A library to replicate data for ODIN v2 via [Matrix]",
   "main": "src/index.js",
@@ -10,8 +10,8 @@
     "type": "git",
     "url": "git+https://github.com/syncpoint/matrix.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "thomas.halwax@syncpoint.io",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/syncpoint/matrix/issues"
   },
@@ -24,5 +24,13 @@
   "devDependencies": {
     "mocha": "^9.1.3",
     "uuid": "^8.3.2"
-  }
+  },
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
+  "keywords": [
+    "Matrix",
+    "replication"
+  ]
 }
