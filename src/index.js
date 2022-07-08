@@ -181,6 +181,21 @@ class Odrix extends EventEmitter{
     return client.loginWithPassword(userId, password)
   }
 
+
+  /**
+   * 
+   * @param {string} dbName 
+   * @returns {string} Within a browser environment this returns the name of the IndexedDB for the given dbName - or undefined otherwise.
+   */
+  static indexedDBName (dbName) {
+    if (!global.window || !global.window.indexedDB || !global.window.localStorage) {
+      logger.debug('no window(indexedDB,localStorage) objects found, indexedDB will be UNDEFINED')
+      return undefined
+    }
+    return `matrix-js-sdk:${dbName}`
+  }
+
+
   /**** public functions ****/
 
   /**
@@ -239,7 +254,7 @@ class Odrix extends EventEmitter{
 
   /**
    * 
-   * @returns {[User]} "All known users": whatever that means for servers with tons of users
+   * @returns {[User]} "All known users (known by the current user)"
    */
   users () {
     return this.client.getUsers().map(user => ({
