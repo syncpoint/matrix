@@ -1,6 +1,6 @@
 {
   "name": "@syncpoint/odrix",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A library to replicate data for ODIN v2 via [Matrix]",
   "main": "src/index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   "homepage": "https://github.com/syncpoint/matrix#readme",
   "dependencies": {
     "dotenv": "^10.0.0",
-    "matrix-js-sdk": "^19.2.0",
+    "matrix-js-sdk": "^17.2.0",
     "pino": "^7.10.0"
   },
   "devDependencies": {
