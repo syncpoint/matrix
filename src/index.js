@@ -1,5 +1,11 @@
 /* ODRIX is an interface that allows using ODIN primitives to be mapped to Matrix */
 
+const getParents = room => {
+  const parents = room.currentState.events.get('m.space.parent')
+  return Array.from(parents.keys())
+}
+
+
 /*
   TODO:
   # explicit vs. impilzit way to share (new) layers: 
@@ -131,6 +137,37 @@ class Odrix extends EventEmitter{
     this.#emit('hierarchy/new', projectStructure)    
   }
 
+  #handleRename = async (matrixEvent) => {
+    if (matrixEvent.getType() !== 'm.room.name') return
+
+    if (matrixEvent.getSender() === this.client.getUserId() && !this.config.alwaysEmit) {
+      logger.debug(`#handleTimeline: sender ${matrixEvent.getSender()} equals current user Id ${this.client.getUserId()} and alwaysEmit is false, skipping this message`)
+      return
+    }
+    
+    const affectedRoom = await this.client.getRoom(matrixEvent.getRoomId())
+    const affectedRoomStructure = this.#toOdinStructure(affectedRoom)
+    /*
+      Looks like the current room name gets updated after
+      firing the event, so we need to take the current value
+      from the event content.
+    */
+    affectedRoomStructure.name = matrixEvent.event.content.name
+
+    /*
+      Matrix rooms may have more than one parent (space).
+    */
+    const parents = getParents(affectedRoom)    
+    for await (const parentRoomId of parents) {
+      const parentRoom = await this.client.getRoom(parentRoomId)
+      const structure = this.#toOdinStructure(parentRoom)
+      structure.layers = [
+        affectedRoomStructure
+      ]
+      this.#emit('hierarchy/renamed', structure)
+    }
+  } 
+
   #emit = (action, entity) => {
     process.nextTick(() => this.emit(action, entity))
   }
@@ -230,6 +267,7 @@ class Odrix extends EventEmitter{
           this.client.on('RoomMember.membership', this.#handleMembership)
           this.client.on('Room.timeline', this.#handleTimeline)
           this.client.on('RoomState.events', this.#handleHierarchy)
+          this.client.on('RoomState.events', this.#handleRename)
           return resolve()
         }       
       }  
