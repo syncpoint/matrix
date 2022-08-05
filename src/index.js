@@ -372,7 +372,7 @@ class Odrix extends EventEmitter{
         'users': {},
         'users_default': 0,
         'events': {
-          'm.room.name': 50,
+          'm.room.name': 0,
           'm.room.power_levels': 100,
           'm.room.history_visibility': 100,
           'm.room.canonical_alias': 100,
@@ -596,6 +596,17 @@ class Odrix extends EventEmitter{
   async joinLayers (entities) {
     const layers = Array.isArray(entities) ? entities : [entities]
     return Promise.all(layers.map(layer => this.client.joinRoom(this.#toMatrixAlias(layer.id))))
+  }
+
+  async renameLayers (entities) {
+    const layers = Array.isArray(entities) ? entities : [entities]
+    layers.forEach(async layer => {
+      const alias = this.#toMatrixAlias(layer.id)
+      const { room_id: roomId } = await this.client.getRoomIdForAlias(alias)
+      this.client.sendStateEvent(roomId, 'm.room.name', {
+        name: layer.name
+      })
+    })
   }
 
   async post (layerId, message) {
