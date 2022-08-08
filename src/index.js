@@ -274,7 +274,7 @@ class Odrix extends EventEmitter{
       this.client.on('sync', readyChecker)
     })
 
-    this.client.startClient()
+    this.client.startClient(this.config.startOptions)
     return toBeReady
   }
 
