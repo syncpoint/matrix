@@ -15,5 +15,6 @@ config.forEach(matrixConfig => {
 module.exports = {
   baseUrl: process.env.MATRIX_BASE_URL,
   userId: process.env.MATRIX_USER_ID,
-  accessToken: process.env.MATRIX_ACCESS_TOKEN
+  accessToken: process.env.MATRIX_ACCESS_TOKEN,
+  initialSyncLimit: process.env.MATRIX_INITIAL_SYNC_LIMIT || 128
 }
