@@ -219,21 +219,21 @@ class Odrix extends EventEmitter{
   }
 
 
+
+  /**** public functions ****/
+
   /**
    * 
    * @param {string} dbName 
    * @returns {string} Within a browser environment this returns the name of the IndexedDB for the given dbName - or undefined otherwise.
    */
-  static indexedDBName (dbName) {
+   indexedDBName (dbName) {
     if (!global.window || !global.window.indexedDB || !global.window.localStorage) {
       logger.debug('no window(indexedDB,localStorage) objects found, indexedDB will be UNDEFINED')
       return undefined
     }
     return `matrix-js-sdk:${dbName}`
   }
-
-
-  /**** public functions ****/
 
   /**
    * @param {string} [dbName="default"] An name for the indexedDB where the SDK saves the current state
