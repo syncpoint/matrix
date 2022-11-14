@@ -147,6 +147,12 @@ class Odrix extends EventEmitter{
     
     const affectedRoom = await this.client.getRoom(matrixEvent.getRoomId())
     const affectedRoomStructure = this.#toOdinStructure(affectedRoom)
+
+    if (!affectedRoomStructure) {
+      logger.warn(`Looks like ${matrixEvent.getRoomId()} (${matrixEvent.event.content.name}) is not an ODIN room. Ignoring m.room.name message`)
+      return
+    }
+
     /*
       Looks like the current room name gets updated after
       firing the event, so we need to take the current value
@@ -406,7 +412,8 @@ class Odrix extends EventEmitter{
           visibility: 'private',
           room_version: '9', // latest stable version as of nov21 (must be a string)
           creation_content: {
-            type: 'm.space' // indicates that the room has the role of a SPACE
+            type: 'm.space',  // indicates that the room has the role of a SPACE
+            guest_access: 'forbidden'
           }
         })
         )    
@@ -428,6 +435,9 @@ class Odrix extends EventEmitter{
               room_alias_name: layer.id,
               visibility: 'private',
               room_version: '9', // latest stable version as of nov21 (must be a string)
+              creation_content: {
+                guest_access: 'forbidden'
+              }
             })
           )
     
