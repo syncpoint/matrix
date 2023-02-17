@@ -30,17 +30,15 @@ const MAX_DEPTH = 1
 const ODIN_MESSAGE_TYPE = 'io.syncpoint.odin.action'
 
 
-const extractServerName = baseUrl => {
-  const url = new URL(baseUrl)
-  return url.hostname
+const extractServerName = userId => {
+  return userId.split(':')[1]
 }
 
 class Odrix extends EventEmitter{
   constructor (config) {
     super()
     this.config = config
-    // this.client = matrixSDK.createClient(config)
-    this.matrixServer = extractServerName(config.baseUrl)
+    this.matrixServer = extractServerName(config.userId)
     logger.debug(`extracted server name ${this.matrixServer} from ${config.baseUrl}`)
   }
 
